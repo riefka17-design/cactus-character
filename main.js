@@ -21,7 +21,8 @@
    Each entry: { id, label, folder, options: [filename, ...] }
    The first option in each list is the default. */
 const CATEGORIES = [
-  { id: 'skin',      label: 'Skin',      folder: 'skin',        options: ['skin1.png','skin2.png','skin3.png','skin4.png','skin5.png','skin6.png'] },
+  { id: 'skin', label: 'Skin', folder: 'skin', options: 
+  [ { file: 'skin1.png', name: 'Ivory' }, { file: 'skin2.png', name: 'Cream' }, { file: 'skin3.png', name: 'Honey' }, { file: 'skin4.png', name: 'Tan' }, { file: 'skin5.png', name: 'Mocha' }, { file: 'skin6.png', name: 'Avatar' }]},
   { id: 'hair',      label: 'Hair',      folder: 'hair',        options: ['hair1.png','hair2.png','hair3.png','hair4.png','hair5.png'], none: true },
   { id: 'eyes',      label: 'Eyes',      folder: 'eyes',        options: ['eyes1.png','eyes2.png','eyes3.png','eyes4.png'] },
   { id: 'eyebrows',  label: 'Eyebrows',  folder: 'eyebrows',    options: ['brows1.png','brows2.png','brows3.png','brows4.png'] },
@@ -91,7 +92,8 @@ function renderOptions() {
     optionsEl.appendChild(noneDiv);
   }
 
-  cat.options.forEach(file => {
+  cat.options.forEach(option => {
+  const file = option.file;
     const div = document.createElement('div');
     div.className = 'option' + (state[cat.id] === file ? ' active' : '');
     div.title = file;
@@ -104,7 +106,7 @@ function renderOptions() {
     // small label with the filename (helps when replacing artwork)
     const label = document.createElement('span');
     label.className = 'opt-label';
-    label.textContent = file.replace('.png', '');
+    label.textContent = option.name;
     div.appendChild(label);
 
     div.addEventListener('click', () => {
