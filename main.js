@@ -202,7 +202,7 @@ if (file === 'none') {
 img.style.display = 'none';
 } else {
 img.style.display = '';
-img.src = `assets/${cat.folder}/${file}`;
+img.src = `/assets/${cat.folder}/${file}`;
 }
 }
 
