@@ -1,210 +1,280 @@
-/* =========================================================
-   CACTUS — Character You with Us
-   Vanilla JavaScript. No frameworks. No backend.
-   ---------------------------------------------------------
-   How it works:
-   1. CATEGORIES lists every customization category and
-      the PNG files available for it.
-   2. The avatar is a stack of <img> layers in #preview.
-      Each layer has a data-layer attribute.
-   3. When a user clicks an option, we only change the
-      src of that one layer. We never redraw anything.
-   4. Random / Reset / Download work on the same state.
-   ---------------------------------------------------------
-   To add your own artwork: drop PNGs into the matching
-   assets/ folder and add the filename to CATEGORIES below.
-   ========================================================= */
-
 'use strict';
 
-/* ---------- 1. Define all categories and their options ----------
-   Each entry: { id, label, folder, options: [filename, ...] }
-   The first option in each list is the default. */
+/* ---------- 1. Categories ---------- */
+
 const CATEGORIES = [
-  { id: 'skin', label: 'Skin', folder: 'skin', options: 
-  [ { file: 'skin1.png', name: 'Ivory' }, { file: 'skin2.png', name: 'Cream' }, { file: 'skin3.png', name: 'Honey' }, { file: 'skin4.png', name: 'Tan' }, { file: 'skin5.png', name: 'Mocha' }, { file: 'skin6.png', name: 'Avatar' }]},
-  { id: 'hair',      label: 'Hair',      folder: 'hair',        options: ['hair1.png','hair2.png','hair3.png','hair4.png','hair5.png'], none: true },
-  { id: 'eyes',      label: 'Eyes',      folder: 'eyes',        options: ['eyes1.png','eyes2.png','eyes3.png','eyes4.png'] },
-  { id: 'eyebrows',  label: 'Eyebrows',  folder: 'eyebrows',    options: ['brows1.png','brows2.png','brows3.png','brows4.png'] },
-  { id: 'mouth',     label: 'Mouth',     folder: 'mouth',       options: ['mouth1.png','mouth2.png','mouth3.png','mouth4.png'] },
-  { id: 'blush',     label: 'Blush',     folder: 'blush',        options: ['blush1.png','blush2.png','blush3.png','blush4.png'] },
-  { id: 'hijab',     label: 'Hijab',     folder: 'hijab',       options: ['hijab1.png','hijab2.png','hijab3.png','hijab4.png'], none: true },
-  { id: 'top',       label: 'Top',       folder: 'tops',        options: ['top1.png','top2.png','top3.png','top4.png'], none: true },
-  { id: 'bottom',    label: 'Bottom',    folder: 'bottoms',     options: ['bottom1.png','bottom2.png','bottom3.png'], none: true },
-  { id: 'dress',     label: 'Dress',     folder: 'dress',       options: ['dress1.png','dress2.png','dress3.png','dress4.png'], none: true },
-  { id: 'accessory', label: 'Accessories', folder: 'accessories', options: ['acc1.png','acc2.png','acc3.png','acc4.png'], none: true },
-  { id: 'hobby',     label: 'Hobby',     folder: 'hobbies',     options: ['hobby1.png','hobby2.png','hobby3.png','hobby4.png'], none: true },
-  { id: 'background',label: 'Background',folder: 'background',  options: ['bg1.png','bg2.png','bg3.png','bg4.png','bg5.png','bg6.png'] },
+{ id: 'skin', label: 'Skin', folder: 'skin', options: [
+{ file: 'skin1.png', name: 'Tan' },
+{ file: 'skin2.png', name: 'Ivory' },
+{ file: 'skin3.png', name: 'Cream' },
+{ file: 'skin4.png', name: 'Porcelain' },
+{ file: 'skin5.png', name: 'Mocha' },
+{ file: 'skin6.png', name: 'Almond' }
+]},
+
+{ id: 'hair', label: 'Hair', folder: 'hair', options: [
+{ file: 'hair1.png', name: 'Hair 1' },
+{ file: 'hair2.png', name: 'Hair 2' },
+{ file: 'hair3.png', name: 'Hair 3' },
+{ file: 'hair4.png', name: 'Hair 4' },
+{ file: 'hair5.png', name: 'Hair 5' }
+], none: true },
+
+{ id: 'eyes', label: 'Eyes', folder: 'eyes', options: [
+{ file: 'eyes1.png', name: 'Eyes 1' },
+{ file: 'eyes2.png', name: 'Eyes 2' },
+{ file: 'eyes3.png', name: 'Eyes 3' },
+{ file: 'eyes4.png', name: 'Eyes 4' }
+]},
+
+{ id: 'eyebrows', label: 'Eyebrows', folder: 'eyebrows', options: [
+{ file: 'brows1.png', name: 'Brows 1' },
+{ file: 'brows2.png', name: 'Brows 2' },
+{ file: 'brows3.png', name: 'Brows 3' },
+{ file: 'brows4.png', name: 'Brows 4' }
+]},
+
+{ id: 'mouth', label: 'Mouth', folder: 'mouth', options: [
+{ file: 'mouth1.png', name: 'Mouth 1' },
+{ file: 'mouth2.png', name: 'Mouth 2' },
+{ file: 'mouth3.png', name: 'Mouth 3' },
+{ file: 'mouth4.png', name: 'Mouth 4' }
+]},
+
+{ id: 'blush', label: 'Blush', folder: 'blush', options: [
+{ file: 'blush1.png', name: 'Blush 1' },
+{ file: 'blush2.png', name: 'Blush 2' },
+{ file: 'blush3.png', name: 'Blush 3' },
+{ file: 'blush4.png', name: 'Blush 4' }
+]},
+
+{ id: 'hijab', label: 'Hijab', folder: 'hijab', options: [
+{ file: 'hijab1.png', name: 'Hijab 1' },
+{ file: 'hijab2.png', name: 'Hijab 2' },
+{ file: 'hijab3.png', name: 'Hijab 3' },
+{ file: 'hijab4.png', name: 'Hijab 4' }
+], none: true },
+
+{ id: 'top', label: 'Top', folder: 'tops', options: [
+{ file: 'top1.png', name: 'Top 1' },
+{ file: 'top2.png', name: 'Top 2' },
+{ file: 'top3.png', name: 'Top 3' },
+{ file: 'top4.png', name: 'Top 4' }
+], none: true },
+
+{ id: 'bottom', label: 'Bottom', folder: 'bottoms', options: [
+{ file: 'bottom1.png', name: 'Bottom 1' },
+{ file: 'bottom2.png', name: 'Bottom 2' },
+{ file: 'bottom3.png', name: 'Bottom 3' }
+], none: true },
+
+{ id: 'dress', label: 'Dress', folder: 'dress', options: [
+{ file: 'dress1.png', name: 'Dress 1' },
+{ file: 'dress2.png', name: 'Dress 2' },
+{ file: 'dress3.png', name: 'Dress 3' },
+{ file: 'dress4.png', name: 'Dress 4' }
+], none: true },
+
+{ id: 'accessory', label: 'Accessories', folder: 'accessories', options: [
+{ file: 'acc1.png', name: 'Acc 1' },
+{ file: 'acc2.png', name: 'Acc 2' },
+{ file: 'acc3.png', name: 'Acc 3' },
+{ file: 'acc4.png', name: 'Acc 4' }
+], none: true },
+
+{ id: 'hobby', label: 'Hobby', folder: 'hobbies', options: [
+{ file: 'hobby1.png', name: 'Hobby 1' },
+{ file: 'hobby2.png', name: 'Hobby 2' },
+{ file: 'hobby3.png', name: 'Hobby 3' },
+{ file: 'hobby4.png', name: 'Hobby 4' }
+], none: true },
+
+{ id: 'background', label: 'Background', folder: 'background', options: [
+{ file: 'bg1.png', name: 'BG 1' },
+{ file: 'bg2.png', name: 'BG 2' },
+{ file: 'bg3.png', name: 'BG 3' },
+{ file: 'bg4.png', name: 'BG 4' },
+{ file: 'bg5.png', name: 'BG 5' },
+{ file: 'bg6.png', name: 'BG 6' }
+]}
 ];
 
-/* ---------- 2. Current state ----------
-   A map of layerId -> chosen filename. Defaults = first option. */
+/* ---------- 2. State ---------- */
+
 let state = {};
+
 function defaultState() {
-  const s = {};
-  CATEGORIES.forEach(c => { s[c.id] = c.options[0]; });
-  return s;
+const s = {};
+CATEGORIES.forEach(c => {
+s[c.id] = c.options[0].file;
+});
+return s;
 }
+
 state = defaultState();
 
-/* ---------- 3. DOM references ---------- */
-const tabsEl   = document.getElementById('tabs');
-const optionsEl= document.getElementById('options');
-const previewEl= document.getElementById('preview');
-const btnRandom  = document.getElementById('btn-random');
-const btnReset   = document.getElementById('btn-reset');
-const btnDownload= document.getElementById('btn-download');
+/* ---------- 3. DOM ---------- */
+
+const tabsEl = document.getElementById('tabs');
+const optionsEl = document.getElementById('options');
+const previewEl = document.getElementById('preview');
+const btnRandom = document.getElementById('btn-random');
+const btnReset = document.getElementById('btn-reset');
+const btnDownload = document.getElementById('btn-download');
 
 let activeCategory = CATEGORIES[0].id;
 
-/* ---------- 4. Build the category tabs ---------- */
+/* ---------- 4. Tabs ---------- */
+
 function renderTabs() {
-  tabsEl.innerHTML = '';
-  CATEGORIES.forEach(cat => {
-    const btn = document.createElement('button');
-    btn.className = 'tab' + (cat.id === activeCategory ? ' active' : '');
-    btn.textContent = cat.label;
-    btn.addEventListener('click', () => {
-      activeCategory = cat.id;
-      renderTabs();
-      renderOptions();
-    });
-    tabsEl.appendChild(btn);
-  });
+tabsEl.innerHTML = '';
+CATEGORIES.forEach(cat => {
+const btn = document.createElement('button');
+btn.className = 'tab' + (cat.id === activeCategory ? ' active' : '');
+btn.textContent = cat.label;
+
+btn.onclick = () => {
+activeCategory = cat.id;
+renderTabs();
+renderOptions();
+};
+
+tabsEl.appendChild(btn);
+});
 }
 
-/* ---------- 5. Build the option buttons for the active category ---------- */
+/* ---------- 5. Options ---------- */
+
 function renderOptions() {
-  optionsEl.innerHTML = '';
-  const cat = CATEGORIES.find(c => c.id === activeCategory);
+optionsEl.innerHTML = '';
+const cat = CATEGORIES.find(c => c.id === activeCategory);
 
-  // If this category supports "None", show a None button first.
-  if (cat.none) {
-    const noneDiv = document.createElement('div');
-    noneDiv.className = 'option' + (state[cat.id] === 'none' ? ' active' : '');
-    noneDiv.title = 'None';
-    noneDiv.innerHTML = '<span class="none-mark">—</span><span class="opt-label">none</span>';
-    noneDiv.addEventListener('click', () => {
-      state[cat.id] = 'none';
-      updateLayer(cat.id, 'none');
-      renderOptions();
-    });
-    optionsEl.appendChild(noneDiv);
-  }
+if (cat.none) {
+const none = document.createElement('div');
+none.className = 'option' + (state[cat.id] === 'none' ? ' active' : '');
+none.innerHTML = '—none';
 
-  cat.options.forEach(option => {
-  const file = option.file;
-    const div = document.createElement('div');
-    div.className = 'option' + (state[cat.id] === file ? ' active' : '');
-    div.title = file;
+none.onclick = () => {
+state[cat.id] = 'none';
+updateLayer(cat.id, 'none');
+renderOptions();
+};
 
-    const img = document.createElement('img');
-    img.src = `assets/${cat.folder}/${file}`;
-    img.alt = file;
-    div.appendChild(img);
-
-    // small label with the filename (helps when replacing artwork)
-    const label = document.createElement('span');
-    label.className = 'opt-label';
-    label.textContent = option.name;
-    div.appendChild(label);
-
-    div.addEventListener('click', () => {
-      state[cat.id] = file;       // update state
-      updateLayer(cat.id, file);  // swap only this layer's image
-      renderOptions();            // refresh active highlight
-    });
-    optionsEl.appendChild(div);
-  });
+optionsEl.appendChild(none);
 }
 
-/* ---------- 6. Swap a single layer's image (no redraw) ---------- */
+cat.options.forEach(opt => {
+const file = opt.file;
+
+const div = document.createElement('div');
+div.className = 'option' + (state[cat.id] === file ? ' active' : '');
+div.title = opt.name;
+
+const img = document.createElement('img');
+img.src = `assets/${cat.folder}/${file}`;
+img.alt = file;
+
+const label = document.createElement('span');
+label.className = 'opt-label';
+label.textContent = opt.name;
+
+div.appendChild(img);
+div.appendChild(label);
+
+div.onclick = () => {
+state[cat.id] = file;
+updateLayer(cat.id, file);
+renderOptions();
+};
+
+optionsEl.appendChild(div);
+});
+}
+
+/* ---------- 6. Update Layer ---------- */
+
 function updateLayer(layerId, file) {
-  const cat = CATEGORIES.find(c => c.id === layerId);
-  const img = previewEl.querySelector(`[data-layer="${layerId}"]`);
-  if (!img || !cat) return;
-  if (file === 'none') {
-    // Hide the layer entirely when "None" is chosen.
-    img.style.display = 'none';
-  } else {
-    img.style.display = '';
-    img.src = `assets/${cat.folder}/${file}`;
-  }
+const cat = CATEGORIES.find(c => c.id === layerId);
+const img = previewEl.querySelector(`[data-layer="${layerId}"]`);
+if (!img || !cat) return;
+
+if (file === 'none') {
+img.style.display = 'none';
+} else {
+img.style.display = '';
+img.src = `assets/${cat.folder}/${file}`;
+}
 }
 
-/* ---------- 7. Apply the full state to the preview ---------- */
+/* ---------- 7. Apply State ---------- */
+
 function applyState() {
-  CATEGORIES.forEach(cat => updateLayer(cat.id, state[cat.id]));
+CATEGORIES.forEach(c => updateLayer(c.id, state[c.id]));
 }
 
-/* ---------- 8. Random button ---------- */
-btnRandom.addEventListener('click', () => {
-  CATEGORIES.forEach(cat => {
-    // For categories that support "None", sometimes pick none.
-    const pool = cat.none ? [...cat.options, 'none'] : cat.options;
-    const pick = pool[Math.floor(Math.random() * pool.length)];
-    state[cat.id] = pick;
-  });
-  applyState();
-  renderOptions();
+/* ---------- 8. Random ---------- */
+
+btnRandom.onclick = () => {
+CATEGORIES.forEach(cat => {
+const pool = cat.none
+? [...cat.options.map(o => o.file), 'none']
+: cat.options.map(o => o.file);
+
+state[cat.id] = pool[Math.floor(Math.random() * pool.length)];
+});
+applyState();
+renderOptions();
+};
+
+/* ---------- 9. Reset ---------- */
+
+btnReset.onclick = () => {
+state = defaultState();
+applyState();
+renderOptions();
+};
+
+/* ---------- 10. Download ---------- */
+
+btnDownload.onclick = async () => {
+const SIZE = 1024;
+const canvas = document.createElement('canvas');
+canvas.width = canvas.height = SIZE;
+const ctx = canvas.getContext('2d');
+
+const layerEls = previewEl.querySelectorAll('.layer');
+const order = [];
+
+layerEls.forEach(el => {
+const id = el.dataset.layer;
+if (id === 'background') return;
+if (state[id] === 'none') return;
+
+const cat = CATEGORIES.find(c => c.id === id);
+order.push(`assets/${cat.folder}/${state[id]}`);
 });
 
-/* ---------- 9. Reset button ---------- */
-btnReset.addEventListener('click', () => {
-  state = defaultState();
-  applyState();
-  renderOptions();
+function load(src) {
+return new Promise(res => {
+const img = new Image();
+img.onload = () => res(img);
+img.src = src;
 });
+}
 
-/* ---------- 10. Download as PNG (transparent background) ----------
-   We draw every layer onto a canvas at high resolution.
-   The background layer is skipped so the export is transparent. */
-btnDownload.addEventListener('click', async () => {
-  const SIZE = 1024; // high resolution export
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = SIZE;
-  const ctx = canvas.getContext('2d');
+for (const src of order) {
+const img = await load(src);
+ctx.drawImage(img, 0, 0, SIZE, SIZE);
+}
 
-  // Load all layer images (except background) in order.
-  const layerEls = previewEl.querySelectorAll('.layer');
-  const order = [];
-  layerEls.forEach(el => {
-    const layerId = el.dataset.layer;
-    if (layerId === 'background') return; // skip for transparency
-    if (state[layerId] === 'none') return; // skip hidden layers
-    const cat = CATEGORIES.find(c => c.id === layerId);
-    if (!cat) return;
-    order.push({ src: `assets/${cat.folder}/${state[layerId]}` });
-  });
+const link = document.createElement('a');
+link.download = 'my-cactus-character.png';
+link.href = canvas.toDataURL('image/png');
+link.click();
+};
 
-  // Helper: load an image and wait for it.
-  function loadImg(src) {
-    return new Promise((resolve, reject) => {
-      const im = new Image();
-      im.crossOrigin = 'anonymous';
-      im.onload = () => resolve(im);
-      im.onerror = reject;
-      im.src = src;
-    });
-  }
+/* ---------- 11. Init ---------- */
 
-  try {
-    for (const item of order) {
-      const im = await loadImg(item.src);
-      ctx.drawImage(im, 0, 0, SIZE, SIZE);
-    }
-    // Trigger download.
-    const link = document.createElement('a');
-    link.download = 'my-cactus-character.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-  } catch (err) {
-    alert('Sorry, could not generate the PNG. Please try again.');
-    console.error(err);
-  }
-});
-
-/* ---------- 11. Initialize ---------- */
 renderTabs();
 renderOptions();
 applyState();
