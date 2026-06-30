@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cactus — Character You with Us</title>
+  <meta name="description" content="Create a tiny version of yourself. Design your own character before joining our workshop." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ============ NAVBAR ============ -->
+  <header class="nav">
+    <a href="#home" class="nav-logo">
+      <span class="nav-mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="28" height="28"><circle cx="16" cy="16" r="14" fill="#c9d8c0"/><path d="M16 6c-3 0-5 3-5 7 0 2 1 3 2 4-2 1-3 3-3 5 0 2 2 4 6 4s6-2 6-4c0-2-1-4-3-5 1-1 2-2 2-4 0-4-2-7-5-7z" fill="#7a9b6e"/></svg>
+      </span>
+      <span class="nav-name">Cactus</span>
+    </a>
+    <nav class="nav-links">
+      <a href="#home">Home</a>
+      <a href="#create">Create</a>
+      <a href="#about">About</a>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- ============ HOME / HERO ============ -->
+    <section id="home" class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Character You with Us</p>
+        <h1 class="hero-title">Cactus</h1>
+        <p class="hero-sub">
+          Create a tiny version of yourself.<br />
+          Design your own character before joining our workshop.
+        </p>
+        <a href="#create" class="btn btn-primary btn-lg">Start Creating</a>
+      </div>
+
+      <div class="hero-art" aria-hidden="true">
+        <div class="hero-card">
+          <!-- A little preview stack of sample layers -->
+          <img src="assets/background/bg1.png" alt="" class="hero-layer" />
+          <img src="assets/body/body1.png" alt="" class="hero-layer" />
+          <img src="assets/skin/skin1.png" alt="" class="hero-layer" />
+          <img src="assets/hair/hair1.png" alt="" class="hero-layer" />
+          <img src="assets/eyes/eyes1.png" alt="" class="hero-layer" />
+          <img src="assets/mouth/mouth1.png" alt="" class="hero-layer" />
+          <img src="assets/blush/blush1.png" alt="" class="hero-layer" />
+          <img src="assets/tops/top1.png" alt="" class="hero-layer" />
+          <img src="assets/accessories/acc3.png" alt="" class="hero-layer" />
+          <img src="assets/hobbies/hobby3.png" alt="" class="hero-layer" />
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ABOUT ============ -->
+    <section id="about" class="about">
+      <h2 class="section-title">A cozy little workshop</h2>
+      <div class="about-grid">
+        <div class="about-card">
+          <div class="about-icon">✿</div>
+          <h3>Design</h3>
+          <p>Pick a skin tone, hair, outfit, and hobby. Build a character that feels like you.</p>
+        </div>
+        <div class="about-card">
+          <div class="about-icon">✦</div>
+          <h3>Join</h3>
+          <p>Bring your character to our workshop. We'll turn it into something real.</p>
+        </div>
+        <div class="about-card">
+          <div class="about-icon">❤</div>
+          <h3>Keep</h3>
+          <p>Leave with a cute keychain of your character, printed just for you.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ AVATAR CREATOR ============ -->
+    <section id="create" class="creator">
+      <h2 class="section-title">Make your character</h2>
+
+      <div class="creator-layout">
+
+        <!-- LEFT: avatar preview -->
+        <div class="preview-wrap">
+          <div class="preview-card" id="preview">
+            <!-- Layered images. Order here matches the stack order. -->
+            <img class="layer" data-layer="background" src="assets/background/bg1.png" alt="" />
+            <img class="layer" data-layer="body"     src="assets/body/body1.png"     alt="" />
+            <img class="layer" data-layer="skin"     src="assets/skin/skin1.png"     alt="" />
+            <img class="layer" data-layer="hair"     src="assets/hair/hair1.png"     alt="" />
+            <img class="layer" data-layer="eyes"     src="assets/eyes/eyes1.png"     alt="" />
+            <img class="layer" data-layer="eyebrows" src="assets/eyebrows/brows1.png" alt="" />
+            <img class="layer" data-layer="mouth"    src="assets/mouth/mouth1.png"   alt="" />
+            <img class="layer" data-layer="blush"    src="assets/blush/blush1.png"   alt="" />
+            <img class="layer" data-layer="hijab"    src="assets/hijab/hijab1.png"   alt="" />
+            <!-- Modest base layer: a simple white tee + shorts so the
+                 character is never bare when no clothing is chosen. -->
+            <img class="layer" data-layer="base"      src="assets/body/base1.png"     alt="" />
+            <img class="layer" data-layer="top"      src="assets/tops/top1.png"      alt="" />
+            <img class="layer" data-layer="bottom"   src="assets/bottoms/bottom1.png" alt="" />
+            <img class="layer" data-layer="dress"    src="assets/dress/dress1.png"   alt="" />
+            <img class="layer" data-layer="shoes"    src="assets/shoes/shoes1.png"   alt="" />
+            <img class="layer" data-layer="accessory" src="assets/accessories/acc1.png" alt="" />
+            <img class="layer" data-layer="hobby"    src="assets/hobbies/hobby1.png" alt="" />
+          </div>
+
+          <div class="preview-actions">
+            <button class="btn btn-soft" id="btn-random">Random</button>
+            <button class="btn btn-soft" id="btn-reset">Reset</button>
+            <button class="btn btn-primary" id="btn-download">Download PNG</button>
+          </div>
+        </div>
+
+        <!-- RIGHT: customization panel -->
+        <div class="panel">
+          <!-- Category tabs -->
+          <div class="tabs" id="tabs"></div>
+          <!-- Options for the active category -->
+          <div class="options" id="options"></div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="footer">
+    <p>Cactus — Character You with Us. A cozy DIY workshop.</p>
+  </footer>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
