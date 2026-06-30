@@ -171,7 +171,7 @@ div.className = 'option' + (state[cat.id] === file ? ' active' : '');
 div.title = opt.name;
 
 const img = document.createElement('img');
-img.src = `assets/${cat.folder}/${file}`;
+img.src = `/assets/${cat.folder}/${file}`;
 img.alt = file;
 
 const label = document.createElement('span');
