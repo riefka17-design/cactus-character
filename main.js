@@ -4,12 +4,12 @@
 
 const CATEGORIES = [
 { id: 'skin', label: 'Skin', folder: 'skin', options: [
-{ file: 'skin1.png', name: 'Tan' },
+{ file: 'skin1.png', name: 'Porcelain' },
 { file: 'skin2.png', name: 'Ivory' },
 { file: 'skin3.png', name: 'Cream' },
-{ file: 'skin4.png', name: 'Porcelain' },
+{ file: 'skin4.png', name: 'Tan' },
 { file: 'skin5.png', name: 'Mocha' },
-{ file: 'skin6.png', name: 'Almond' }
+{ file: 'skin6.png', name: 'Avatar' }
 ]},
 
 { id: 'hair', label: 'Hair', folder: 'hair', options: [
