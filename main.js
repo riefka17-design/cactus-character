@@ -22,7 +22,7 @@ const CATEGORIES = [
 { file: 'naturalflush7.png', name: 'Terracotta' },
 { file: 'naturalflush8.png', name: 'Warm Berry' },
 { file: 'naturalflush9.png', name: 'Cocoa Rose' },
-{ file: 'top5.png', name: 'None' }
+{ file: 'naturalflush10.png', name: 'None' }
 ]},
 
 { id: 'hair', label: 'Hair', folder: 'hair', options: [
@@ -89,25 +89,17 @@ const CATEGORIES = [
 ]},
 
 { id: 'hijab', label: 'Hijab', folder: 'hijab', options: [
-{ file: 'hijab1.png', name: 'Hijab 1' },
-{ file: 'hijab2.png', name: 'Hijab 2' },
-{ file: 'hijab3.png', name: 'Hijab 3' },
-{ file: 'hijab4.png', name: 'Hijab 4' },
-{ file: 'hijab5.png', name: 'None' }
+{ file: 'hijab1.png', name: 'None' }
 ]},
 
 { id: 'top', label: 'Top', folder: 'tops', options: [
 { file: 'top1.png', name: 'Top 1' },
 { file: 'top2.png', name: 'Top 2' },
-{ file: 'top3.png', name: 'Top 3' },
-{ file: 'top4.png', name: 'Top 4' },
 { file: 'top5.png', name: 'None' }
 ]},
 
 { id: 'bottom', label: 'Bottom', folder: 'bottoms', options: [
 { file: 'bottom1.png', name: 'Bottom 1' },
-{ file: 'bottom2.png', name: 'Bottom 2' },
-{ file: 'bottom3.png', name: 'Bottom 3' },
 { file: 'bottom4.png', name: 'None' }
 ]},
 
