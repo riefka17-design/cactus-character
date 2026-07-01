@@ -270,9 +270,10 @@ const id = el.dataset.layer;
 if (id === 'background') return;
 if (state[id] === 'none') return;
 
-const cat = CATEGORIES.find(c => c.id === id);
-order.push(`assets/${cat.folder}/${state[id]}`);
-});
+if (id === "base") {
+    order.push("/assets/body/base1.png");
+    return;
+}
 
 function load(src) {
 return new Promise(res => {
