@@ -50,7 +50,7 @@ const CATEGORIES = [
 { file: 'brows4.png', name: 'Brows 4' },
 { file: 'brows5.png', name: 'Brows 5' },
 { file: 'brows6.png', name: 'Brows 6' }
-]},
+], none: true },
 
 { id: 'mouth', label: 'Mouth', folder: 'mouth', options: [
 { file: 'mouth1.png', name: 'Mouth 1' },
@@ -66,7 +66,7 @@ const CATEGORIES = [
 { file: 'blush2.png', name: 'Blush 2' },
 { file: 'blush3.png', name: 'Blush 3' },
 { file: 'blush4.png', name: 'Blush 4' }
-]},
+], none: true },
 
 { id: 'hijab', label: 'Hijab', folder: 'hijab', options: [
 { file: 'hijab1.png', name: 'Hijab 1' },
@@ -116,7 +116,7 @@ const CATEGORIES = [
 { file: 'bg4.png', name: 'BG 4' },
 { file: 'bg5.png', name: 'BG 5' },
 { file: 'bg6.png', name: 'BG 6' }
-]}
+], none: true }
 ];
 
 /* ---------- 2. State ---------- */
