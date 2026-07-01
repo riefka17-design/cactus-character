@@ -13,39 +13,61 @@ const CATEGORIES = [
 ]},
 
 { id: 'hair', label: 'Hair', folder: 'hair', options: [
-{ file: 'hair1.png', name: 'Hair 1' },
-{ file: 'hair2.png', name: 'Hair 2' },
-{ file: 'hair3.png', name: 'Hair 3' },
-{ file: 'hair4.png', name: 'Hair 4' },
-{ file: 'hair5.png', name: 'Hair 5' }
+{ file: 'hair1.png', name: 'Pink ' },
+{ file: 'hair2.png', name: 'Blonde' },
+{ file: 'hair3.png', name: 'Brown' },
+{ file: 'hair4.png', name: 'Red' },
+{ file: 'hair5.png', name: 'Yellow' },
+{ file: 'hair6.png', name: 'Gray' },
+{ file: 'hair7.png', name: 'Blue' },
+{ file: 'hair8.png', name: 'Red' }
 ], none: true },
 
 { id: 'eyes', label: 'Eyes', folder: 'eyes', options: [
 { file: 'eyes1.png', name: 'Eyes 1' },
 { file: 'eyes2.png', name: 'Eyes 2' },
 { file: 'eyes3.png', name: 'Eyes 3' },
-{ file: 'eyes4.png', name: 'Eyes 4' }
+{ file: 'eyes4.png', name: 'Eyes 4' },
+{ file: 'eyes5.png', name: 'Eyes 1' },
+{ file: 'eyes6.png', name: 'Eyes 2' },
+{ file: 'eyes7.png', name: 'Eyes 3' },
+{ file: 'eyes8.png', name: 'Eyes 4' },
+{ file: 'eyes9.png', name: 'Eyes 1' },
+{ file: 'eyes10.png', name: 'Eyes 2' },
+{ file: 'eyes11.png', name: 'Eyes 3' },
+{ file: 'eyes12.png', name: 'Eyes 4' },
+{ file: 'eyes13.png', name: 'Eyes 1' },
+{ file: 'eyes14.png', name: 'Eyes 2' },
+{ file: 'eyes15.png', name: 'Eyes 3' },
+{ file: 'eyes16.png', name: 'Eyes 4' },
+{ file: 'eyes17.png', name: 'Eyes 4' }
 ]},
 
 { id: 'eyebrows', label: 'Eyebrows', folder: 'eyebrows', options: [
 { file: 'brows1.png', name: 'Brows 1' },
 { file: 'brows2.png', name: 'Brows 2' },
 { file: 'brows3.png', name: 'Brows 3' },
-{ file: 'brows4.png', name: 'Brows 4' }
+{ file: 'brows4.png', name: 'Brows 4' },
+{ file: 'brows5.png', name: 'Brows 5' },
+{ file: 'brows6.png', name: 'Brows 6' }
 ]},
 
 { id: 'mouth', label: 'Mouth', folder: 'mouth', options: [
 { file: 'mouth1.png', name: 'Mouth 1' },
 { file: 'mouth2.png', name: 'Mouth 2' },
 { file: 'mouth3.png', name: 'Mouth 3' },
-{ file: 'mouth4.png', name: 'Mouth 4' }
+{ file: 'mouth4.png', name: 'Mouth 4' },
+{ file: 'mouth5.png', name: 'Mouth 5' },
+{ file: 'mouth6.png', name: 'Mouth 6' }
 ]},
 
 { id: 'blush', label: 'Blush', folder: 'blush', options: [
 { file: 'blush1.png', name: 'Blush 1' },
 { file: 'blush2.png', name: 'Blush 2' },
 { file: 'blush3.png', name: 'Blush 3' },
-{ file: 'blush4.png', name: 'Blush 4' }
+{ file: 'blush4.png', name: 'Blush 4' },
+{ file: 'blush5.png', name: 'Blush 5' },
+{ file: 'blush6.png', name: 'Blush 6' }
 ]},
 
 { id: 'hijab', label: 'Hijab', folder: 'hijab', options: [
