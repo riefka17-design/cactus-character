@@ -257,43 +257,38 @@ renderOptions();
 /* ---------- 10. Download ---------- */
 
 btnDownload.onclick = async () => {
-const SIZE = 1024;
-const canvas = document.createElement('canvas');
-canvas.width = canvas.height = SIZE;
-const ctx = canvas.getContext('2d');
+  const SIZE = 1024;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = SIZE;
+  const ctx = canvas.getContext("2d");
 
-const layerEls = previewEl.querySelectorAll('.layer');
-const order = [];
+  const layerEls = previewEl.querySelectorAll(".layer");
 
-layerEls.forEach(el => {
-const id = el.dataset.layer;
-if (id === 'background') return;
-if (state[id] === 'none') return;
+  function load(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(src);
+      img.src = src;
+    });
+  }
 
-if (id === "base") {
-    order.push("/assets/body/base1.png");
-    return;
-}
+  for (const el of layerEls) {
+    if (el.style.display === "none") continue;
 
-function load(src) {
-return new Promise(res => {
-const img = new Image();
-img.onload = () => res(img);
-img.src = src;
-});
-}
+    try {
+      const img = await load(el.src);
+      ctx.drawImage(img, 0, 0, SIZE, SIZE);
+    } catch (e) {
+      console.error("Failed to load:", e);
+    }
+  }
 
-for (const src of order) {
-const img = await load(src);
-ctx.drawImage(img, 0, 0, SIZE, SIZE);
-}
-
-const link = document.createElement('a');
-link.download = 'my-cactus-character.png';
-link.href = canvas.toDataURL('image/png');
-link.click();
+  const link = document.createElement("a");
+  link.download = "my-cactus-character.png";
+  link.href = canvas.toDataURL("image/png");
+  link.click();
 };
-
 /* ---------- 11. Init ---------- */
 
 renderTabs();
