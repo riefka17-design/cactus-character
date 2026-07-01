@@ -22,58 +22,62 @@ const CATEGORIES = [
 { file: 'naturalflush7.png', name: 'Terracotta' },
 { file: 'naturalflush8.png', name: 'Warm Berry' },
 { file: 'naturalflush9.png', name: 'Cocoa Rose' },
-{ file: 'top5.png', name: 'none' }
+{ file: 'top5.png', name: 'None' }
 ]},
 
 { id: 'hair', label: 'Hair', folder: 'hair', options: [
-{ file: 'hair1.png', name: 'Pink ' },
-{ file: 'hair2.png', name: 'Blonde' },
-{ file: 'hair3.png', name: 'Brown' },
-{ file: 'hair4.png', name: 'Red' },
-{ file: 'hair5.png', name: 'Yellow' },
-{ file: 'hair6.png', name: 'Gray' },
-{ file: 'hair7.png', name: 'Blue' },
-{ file: 'hair8.png', name: 'Red' },
-{ file: 'hair9.png', name: 'none' }
+{ file: 'hair1.png', name: 'Sakura Pink Short Bob' },
+{ file: 'hair2.png', name: 'Ice Blue Short Bob' },
+{ file: 'hair3.png', name: 'Brown Short Bob' },
+{ file: 'hair4.png', name: 'Cherry Red Short Bob' },
+{ file: 'hair5.png', name: 'Yellow Spiky Hair' },
+{ file: 'hair6.png', name: 'Gray Spiky Hair' },
+{ file: 'hair7.png', name: 'Blue Spiky Hair' },
+{ file: 'hair8.png', name: 'Red Spiky Hair' },
+{ file: 'hair9.png', name: 'Brown Classic Bun' },
+{ file: 'hair10.png', name: 'Pink Classic Bun' },
+{ file: 'hair11.png', name: 'Yellow Classic Bun' },
+{ file: 'hair12.png', name: 'None' }
 ]},
 
 { id: 'eyes', label: 'Eyes', folder: 'eyes', options: [
-{ file: 'eyes1.png', name: 'Eyes 1' },
-{ file: 'eyes2.png', name: 'Eyes 2' },
-{ file: 'eyes3.png', name: 'Eyes 3' },
-{ file: 'eyes4.png', name: 'Eyes 4' },
-{ file: 'eyes5.png', name: 'Eyes 1' },
-{ file: 'eyes6.png', name: 'Eyes 2' },
-{ file: 'eyes7.png', name: 'Eyes 3' },
-{ file: 'eyes8.png', name: 'Eyes 4' },
-{ file: 'eyes9.png', name: 'Eyes 1' },
-{ file: 'eyes10.png', name: 'Eyes 2' },
-{ file: 'eyes11.png', name: 'Eyes 3' },
-{ file: 'eyes12.png', name: 'Eyes 4' },
-{ file: 'eyes13.png', name: 'Eyes 1' },
-{ file: 'eyes14.png', name: 'Eyes 2' },
-{ file: 'eyes15.png', name: 'Eyes 3' },
-{ file: 'eyes16.png', name: 'Eyes 4' },
-{ file: 'eyes17.png', name: 'Eyes 4' }
+{ file: 'eyes1.png', name: 'Innocent Cocoa' },
+{ file: 'eyes2.png', name: 'Gentle Purple' },
+{ file: 'eyes3.png', name: 'Gentle Brown' },
+{ file: 'eyes4.png', name: 'Gentle Blue' },
+{ file: 'eyes5.png', name: 'Gentle Emerald' },
+{ file: 'eyes6.png', name: 'Classic Amber' },
+{ file: 'eyes7.png', name: 'Classic Sea' },
+{ file: 'eyes8.png', name: 'Classic Violet' },
+{ file: 'eyes9.png', name: 'Doe Leaf' },
+{ file: 'eyes10.png', name: 'Doe Sky' },
+{ file: 'eyes11.png', name: 'Doe Brown' },
+{ file: 'eyes12.png', name: 'Doe Violet' },
+{ file: 'eyes13.png', name: 'Curious Teal' },
+{ file: 'eyes14.png', name: 'Curious Blue' },
+{ file: 'eyes15.png', name: 'Curious Purple' },
+{ file: 'eyes16.png', name: 'Soft Sky' },
+{ file: 'eyes17.png', name: 'Soft Emerald' },
+{ file: 'eyes18.png', name: 'Soft Wood' }
 ]},
 
 { id: 'eyebrows', label: 'Eyebrows', folder: 'eyebrows', options: [
-{ file: 'brows1.png', name: 'Brows 1' },
-{ file: 'brows2.png', name: 'Brows 2' },
-{ file: 'brows3.png', name: 'Brows 3' },
-{ file: 'brows4.png', name: 'Brows 4' },
-{ file: 'brows5.png', name: 'Brows 5' },
-{ file: 'brows6.png', name: 'Brows 6' },
-{ file: 'brows7.png', name: 'none' }
+{ file: 'brows1.png', name: 'Soft Arch' },
+{ file: 'brows2.png', name: 'Gentle Arch' },
+{ file: 'brows3.png', name: 'Natural Arch' },
+{ file: 'brows4.png', name: 'Straight' },
+{ file: 'brows5.png', name: 'Relaxed' },
+{ file: 'brows6.png', name: 'Cute Curve' },
+{ file: 'brows7.png', name: 'None' }
 ]},
 
 { id: 'mouth', label: 'Mouth', folder: 'mouth', options: [
-{ file: 'mouth1.png', name: 'Mouth 1' },
-{ file: 'mouth2.png', name: 'Mouth 2' },
-{ file: 'mouth3.png', name: 'Mouth 3' },
-{ file: 'mouth4.png', name: 'Mouth 4' },
-{ file: 'mouth5.png', name: 'Mouth 5' },
-{ file: 'mouth6.png', name: 'Mouth 6' }
+{ file: 'mouth1.png', name: 'Smile' },
+{ file: 'mouth2.png', name: 'Frown' },
+{ file: 'mouth3.png', name: 'Ooh' },
+{ file: 'mouth4.png', name: 'Gasp' },
+{ file: 'mouth5.png', name: 'Pout' },
+{ file: 'mouth6.png', name: 'Grin' }
 ]},
 
 { id: 'blush', label: 'Blush', folder: 'blush', options: [
@@ -81,7 +85,7 @@ const CATEGORIES = [
 { file: 'blush2.png', name: 'Cheek Blush' },
 { file: 'blush3.png', name: 'Dot Blush' },
 { file: 'blush4.png', name: 'Side Stripe Blush' },
-{ file: 'blush5.png', name: 'none' }
+{ file: 'blush5.png', name: 'None' }
 ]},
 
 { id: 'hijab', label: 'Hijab', folder: 'hijab', options: [
@@ -89,7 +93,7 @@ const CATEGORIES = [
 { file: 'hijab2.png', name: 'Hijab 2' },
 { file: 'hijab3.png', name: 'Hijab 3' },
 { file: 'hijab4.png', name: 'Hijab 4' },
-{ file: 'hijab5.png', name: 'none' }
+{ file: 'hijab5.png', name: 'None' }
 ]},
 
 { id: 'top', label: 'Top', folder: 'tops', options: [
@@ -97,14 +101,14 @@ const CATEGORIES = [
 { file: 'top2.png', name: 'Top 2' },
 { file: 'top3.png', name: 'Top 3' },
 { file: 'top4.png', name: 'Top 4' },
-{ file: 'top5.png', name: 'none' }
+{ file: 'top5.png', name: 'None' }
 ]},
 
 { id: 'bottom', label: 'Bottom', folder: 'bottoms', options: [
 { file: 'bottom1.png', name: 'Bottom 1' },
 { file: 'bottom2.png', name: 'Bottom 2' },
 { file: 'bottom3.png', name: 'Bottom 3' },
-{ file: 'bottom4.png', name: 'none' }
+{ file: 'bottom4.png', name: 'None' }
 ]},
 
 { id: 'dress', label: 'Dress', folder: 'dress', options: [
@@ -112,7 +116,7 @@ const CATEGORIES = [
 { file: 'dress2.png', name: 'Dress 2' },
 { file: 'dress3.png', name: 'Dress 3' },
 { file: 'dress4.png', name: 'Dress 4' },
-{ file: 'dress5.png', name: 'none' }
+{ file: 'dress5.png', name: 'None' }
 ]},
 
 { id: 'accessory', label: 'Accessories', folder: 'accessories', options: [
@@ -120,7 +124,7 @@ const CATEGORIES = [
 { file: 'acc2.png', name: 'Acc 2' },
 { file: 'acc3.png', name: 'Acc 3' },
 { file: 'acc4.png', name: 'Acc 4' },
-{ file: 'acc5.png', name: 'none' }
+{ file: 'acc5.png', name: 'None' }
 ]},
 
 { id: 'hobby', label: 'Hobby', folder: 'hobbies', options: [
@@ -128,7 +132,7 @@ const CATEGORIES = [
 { file: 'hobby2.png', name: 'Hobby 2' },
 { file: 'hobby3.png', name: 'Hobby 3' },
 { file: 'hobby4.png', name: 'Hobby 4' },
-{ file: 'hobby5.png', name: 'none' }
+{ file: 'hobby5.png', name: 'None' }
 ]},
 
 { id: 'background', label: 'Background', folder: 'background', options: [
@@ -138,7 +142,7 @@ const CATEGORIES = [
 { file: 'bg4.png', name: 'BG 4' },
 { file: 'bg5.png', name: 'BG 5' },
 { file: 'bg6.png', name: 'BG 6' },
-{ file: 'bg7.png', name: 'none' }
+{ file: 'bg7.png', name: 'None' }
 ]},
 
 ];
