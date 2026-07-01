@@ -66,7 +66,7 @@ const CATEGORIES = [
 { file: 'blush2.png', name: 'Blush 2' },
 { file: 'blush3.png', name: 'Blush 3' },
 { file: 'blush4.png', name: 'Blush 4' }
-], none: true },
+], none: true }
 
 { id: 'hijab', label: 'Hijab', folder: 'hijab', options: [
 { file: 'hijab1.png', name: 'Hijab 1' },
