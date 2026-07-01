@@ -12,6 +12,29 @@ const CATEGORIES = [
 { file: 'skin6.png', name: 'Avatar' }
 ]},
 
+{ id: 'naturalflush', label: 'Natural Flush', folder: 'naturalflush', options: [
+{ file: 'naturalflush1.png', name: 'Soft Pink' },
+{ file: 'naturalflush2.png', name: 'Rose Pink' },
+{ file: 'naturalflush3.png', name: 'Peach' },
+{ file: 'naturalflush4.png', name: 'Apricot' },
+{ file: 'naturalflush5.png', name: 'Coral' },
+{ file: 'naturalflush6.png', name: 'Soft Mauve' },
+{ file: 'naturalflush7.png', name: 'Terracotta' },
+{ file: 'naturalflush8.png', name: 'Warm Berry' },
+{ file: 'naturalflush9.png', name: 'Cocoa Rose' }
+]},
+
+{ id: 'hair', label: 'Hair', folder: 'hair', options: [
+{ file: 'hair1.png', name: 'Pink ' },
+{ file: 'hair2.png', name: 'Blonde' },
+{ file: 'hair3.png', name: 'Brown' },
+{ file: 'hair4.png', name: 'Red' },
+{ file: 'hair5.png', name: 'Yellow' },
+{ file: 'hair6.png', name: 'Gray' },
+{ file: 'hair7.png', name: 'Blue' },
+{ file: 'hair8.png', name: 'Red' }
+]},
+
 { id: 'hair', label: 'Hair', folder: 'hair', options: [
 { file: 'hair1.png', name: 'Pink ' },
 { file: 'hair2.png', name: 'Blonde' },
@@ -66,7 +89,7 @@ const CATEGORIES = [
 { file: 'blush2.png', name: 'Blush 2' },
 { file: 'blush3.png', name: 'Blush 3' },
 { file: 'blush4.png', name: 'Blush 4' }
-], none: true }
+], none: true },
 
 { id: 'hijab', label: 'Hijab', folder: 'hijab', options: [
 { file: 'hijab1.png', name: 'Hijab 1' },
