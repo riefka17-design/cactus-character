@@ -128,13 +128,19 @@ const CATEGORIES = [
 ]},
 
 { id: 'background', label: 'Background', folder: 'background', options: [
-{ file: 'bg1.png', name: 'BG 1' },
-{ file: 'bg2.png', name: 'BG 2' },
-{ file: 'bg3.png', name: 'BG 3' },
-{ file: 'bg4.png', name: 'BG 4' },
-{ file: 'bg5.png', name: 'BG 5' },
-{ file: 'bg6.png', name: 'BG 6' },
-{ file: 'bg7.png', name: 'None' }
+{ file: 'bg1.png', name: 'Plain White' },
+{ file: 'bg2.png', name: 'Soft Blue' },
+{ file: 'bg3.png', name: 'Cream Beige' },
+{ file: 'bg4.png', name: 'Mint Green' },
+{ file: 'bg5.png', name: 'Sunny Meadow' },
+{ file: 'bg6.png', name: 'Cozy Room' },
+{ file: 'bg7.png', name: 'Minimal Interior' },
+{ file: 'bg8.png', name: 'Living Room' },
+{ file: 'bg9.png', name: 'Victorian Hall' },
+{ file: 'bg10.png', name: 'Carnival Night' },
+{ file: 'bg11.png', name: 'Hallowen Street' },
+{ file: 'bg12.png', name: 'Fireplace Lounge' },
+{ file: 'bg13.png', name: 'None' }
 ]},
 
 ];
