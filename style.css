@@ -1,30 +1,74 @@
 /* =========================================================
    CACTUS — Character You with Us
-   Cozy, minimal, pastel. Pinterest + MUJI + DIY workshop.
+   Cozy game UI · Scrapbook journal · Handcrafted warmth
    ========================================================= */
 
-/* ---------- Color palette ---------- */
-:root {
-  --cream:    #faf5eb;   /* page background */
-  --beige:    #f0e6d8;   /* cards, surfaces */
-  --beige-2:  #e8dcc8;   /* borders, dividers */
-  --sage:     #a8c4a0;   /* primary accent */
-  --sage-d:   #7a9b6e;   /* primary dark */
-  --brown:    #8a6a52;   /* warm brown text accent */
-  --pink:     #f4d4d8;   /* soft pink */
-  --blue:     #c9d8e4;   /* dusty blue */
-  --ink:      #5a4a3e;   /* main text (warm brown) */
-  --ink-soft: #8a7a6e;   /* secondary text */
-  --white:    #ffffff;
+/* ── Google Fonts: add Caveat for handwritten feel ─────── */
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Nunito:wght@400;500;600;700&display=swap');
 
-  --radius:   20px;
-  --radius-sm: 12px;
-  --shadow:   0 6px 20px rgba(120, 100, 80, 0.10);
-  --shadow-lg: 0 14px 40px rgba(120, 100, 80, 0.16);
+/* ─────────────────────────────────────────────────────────
+   1. DESIGN TOKENS
+   ───────────────────────────────────────────────────────── */
+:root {
+  /* Paper palette */
+  --cream:       #fdf8ef;
+  --ivory:       #f9f2e3;
+  --parchment:   #f3e9d2;
+  --parchment-d: #e8d8b8;
+  --paper:       #faf5e8;
+
+  /* Sage family */
+  --sage-l:      #c8dbc0;
+  --sage:        #9cbf8e;
+  --sage-d:      #6b9460;
+  --sage-dk:     #4e7248;
+
+  /* Warm brown (ink) */
+  --ink:         #5a3e2b;
+  --ink-soft:    #8a6a52;
+  --ink-light:   #b89a82;
+  --brown-warm:  #a0714e;
+
+  /* Soft pastels */
+  --pink-l:      #fde8e4;
+  --pink:        #f5c5bb;
+  --pink-d:      #e89a8a;
+  --blue-l:      #dceaf4;
+  --blue:        #b5cfe0;
+  --blue-d:      #8aadca;
+  --peach:       #f7cba8;
+  --honey:       #f0c060;
+  --honey-d:     #d9a030;
+  --lavender:    #d8cef0;
+  --mint:        #c8e8d0;
+
+  /* Neutral */
+  --white:       #ffffff;
+  --border:      #ddd0b8;
+
+  /* Radii */
+  --r-xs:  8px;
+  --r-sm:  14px;
+  --r:     20px;
+  --r-lg:  28px;
+  --r-xl:  40px;
+  --r-full: 999px;
+
+  /* Shadows — layered, warm */
+  --sh-xs:  0 2px 6px rgba(100,70,40,.10);
+  --sh-sm:  0 4px 14px rgba(100,70,40,.12);
+  --sh:     0 8px 24px rgba(100,70,40,.14),  0 2px 6px rgba(100,70,40,.08);
+  --sh-lg:  0 16px 48px rgba(100,70,40,.16), 0 4px 12px rgba(100,70,40,.10);
+  --sh-inset: inset 0 2px 6px rgba(100,70,40,.10);
+
+  /* Paper inner glow */
+  --paper-glow: inset 0 1px 2px rgba(255,255,220,.6);
 }
 
-/* ---------- Reset ---------- */
-* { box-sizing: border-box; margin: 0; padding: 0; }
+/* ─────────────────────────────────────────────────────────
+   2. RESET & BASE
+   ───────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html { scroll-behavior: smooth; }
 
@@ -32,187 +76,824 @@ body {
   font-family: 'Nunito', system-ui, sans-serif;
   background: var(--cream);
   color: var(--ink);
-  line-height: 1.6;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
+  /* subtle paper grain */
+  background-image:
+    radial-gradient(ellipse at 20% 10%, rgba(240,192,96,.08) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 90%, rgba(181,207,224,.10) 0%, transparent 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  min-height: 100vh;
 }
 
 img { display: block; max-width: 100%; }
-a { color: inherit; text-decoration: none; }
+a   { color: inherit; text-decoration: none; }
 
-/* ---------- Typography ---------- */
-h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; line-height: 1.2; }
+/* ─────────────────────────────────────────────────────────
+   3. TYPOGRAPHY
+   ───────────────────────────────────────────────────────── */
+h1, h2, h3 {
+  font-family: 'Fraunces', Georgia, serif;
+  line-height: 1.2;
+  color: var(--ink);
+}
 
-/* ---------- Navbar ---------- */
+/* ─────────────────────────────────────────────────────────
+   4. KEYFRAMES
+   ───────────────────────────────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33%       { transform: translateY(-8px) rotate(.4deg); }
+  66%       { transform: translateY(-4px) rotate(-.3deg); }
+}
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-12px); }
+}
+@keyframes wobble {
+  0%, 100% { transform: rotate(-1deg); }
+  50%       { transform: rotate(1deg); }
+}
+@keyframes sparkle {
+  0%, 100% { opacity: 1; transform: scale(1) rotate(0deg); }
+  50%       { opacity: .6; transform: scale(1.3) rotate(15deg); }
+}
+@keyframes petal-drift {
+  0%   { transform: translateY(-20px) rotate(0deg); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: .8; }
+  100% { transform: translateY(calc(100vh + 20px)) rotate(360deg); opacity: 0; }
+}
+@keyframes btn-press {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%       { transform: translateY(2px) scale(.98); }
+}
+@keyframes stamp-in {
+  0%   { transform: scale(1.4) rotate(-6deg); opacity: 0; }
+  60%  { transform: scale(.95) rotate(2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+@keyframes bounce-in {
+  0%   { transform: scale(.8); opacity: 0; }
+  70%  { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+/* ─────────────────────────────────────────────────────────
+   5. NAVBAR — floating paper strip
+   ───────────────────────────────────────────────────────── */
 .nav {
-  position: sticky; top: 0; z-index: 50;
+  position: sticky; top: 12px; z-index: 100;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 28px;
-  background: rgba(250, 245, 235, 0.85);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--beige-2);
+  max-width: 1100px;
+  margin: 12px auto 0;
+  padding: 12px 20px 12px 16px;
+  background: rgba(253,248,239,.92);
+  backdrop-filter: blur(12px) saturate(120%);
+  border: 1.5px solid var(--parchment-d);
+  border-radius: var(--r-xl);
+  box-shadow: var(--sh), var(--paper-glow);
 }
-.nav-logo { display: flex; align-items: center; gap: 10px; }
-.nav-mark { display: grid; place-items: center; }
-.nav-name { font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 700; color: var(--ink); }
-.nav-links { display: flex; gap: 24px; }
-.nav-links a { font-weight: 600; color: var(--ink-soft); transition: color .2s; }
-.nav-links a:hover { color: var(--sage-d); }
+/* decorative washi tape strip on nav */
+.nav::before {
+  content: '';
+  position: absolute; left: 50%; top: -6px;
+  transform: translateX(-50%);
+  width: 60px; height: 12px;
+  background: linear-gradient(90deg, var(--sage-l), var(--mint), var(--sage-l));
+  border-radius: var(--r-full);
+  opacity: .7;
+}
 
-/* ---------- Buttons ---------- */
+.nav-logo {
+  display: flex; align-items: center; gap: 10px;
+  transition: transform .2s ease;
+}
+.nav-logo:hover { transform: scale(1.04); }
+
+.nav-mark {
+  display: grid; place-items: center;
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--sage-l), var(--mint));
+  border-radius: 50%;
+  box-shadow: 0 3px 10px rgba(107,148,96,.3), var(--paper-glow);
+  border: 2px solid var(--white);
+}
+.nav-name {
+  font-family: 'Fraunces', serif;
+  font-size: 1.35rem; font-weight: 700;
+  color: var(--ink);
+  letter-spacing: .02em;
+}
+
+.nav-links {
+  display: flex; gap: 6px;
+}
+.nav-links a {
+  font-weight: 700; font-size: .88rem;
+  color: var(--ink-soft);
+  padding: 7px 16px;
+  border-radius: var(--r-full);
+  border: 1.5px solid transparent;
+  background: transparent;
+  transition: all .2s ease;
+  position: relative;
+}
+.nav-links a:hover {
+  color: var(--ink);
+  background: var(--parchment);
+  border-color: var(--border);
+  box-shadow: var(--sh-xs);
+  transform: translateY(-1px);
+}
+
+/* ─────────────────────────────────────────────────────────
+   6. BUTTONS — cute capsule with 3D press
+   ───────────────────────────────────────────────────────── */
 .btn {
-  font-family: inherit; font-weight: 700; font-size: 1rem;
+  font-family: 'Nunito', inherit;
+  font-weight: 700; font-size: .95rem;
   border: none; cursor: pointer;
-  padding: 12px 24px; border-radius: 999px;
-  transition: transform .15s ease, box-shadow .2s ease, background .2s;
+  padding: 11px 24px;
+  border-radius: var(--r-full);
+  transition: transform .12s ease, box-shadow .15s ease;
+  position: relative;
+  letter-spacing: .02em;
+  display: inline-flex; align-items: center; gap: 6px;
 }
-.btn:hover { transform: translateY(-2px); }
-.btn:active { transform: translateY(0); }
-.btn-primary { background: var(--sage-d); color: var(--white); box-shadow: 0 6px 16px rgba(122,155,110,.35); }
-.btn-primary:hover { background: #6b8a60; }
-.btn-soft { background: var(--beige); color: var(--ink); }
-.btn-soft:hover { background: var(--beige-2); }
-.btn-lg { padding: 16px 36px; font-size: 1.1rem; }
+.btn::after {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 1px 2px rgba(255,255,255,.5), inset 0 -2px 0 rgba(0,0,0,.12);
+  pointer-events: none;
+}
+.btn:hover  { transform: translateY(-3px); }
+.btn:active {
+  transform: translateY(1px);
+  box-shadow: none !important;
+  animation: btn-press .15s ease;
+}
 
-/* ---------- Hero ---------- */
+.btn-primary {
+  background: linear-gradient(160deg, var(--sage), var(--sage-dk));
+  color: var(--white);
+  box-shadow: 0 6px 0 var(--sage-dk), 0 8px 18px rgba(78,114,72,.35);
+  text-shadow: 0 1px 2px rgba(0,0,0,.2);
+}
+.btn-primary:hover {
+  box-shadow: 0 8px 0 var(--sage-dk), 0 12px 24px rgba(78,114,72,.4);
+  background: linear-gradient(160deg, #a8cc98, var(--sage-d));
+}
+.btn-primary:active {
+  box-shadow: 0 2px 0 var(--sage-dk), 0 4px 10px rgba(78,114,72,.3) !important;
+}
+
+.btn-soft {
+  background: linear-gradient(160deg, var(--ivory), var(--parchment));
+  color: var(--ink);
+  box-shadow: 0 5px 0 var(--parchment-d), 0 7px 14px rgba(100,70,40,.15);
+  border: 1.5px solid var(--border);
+}
+.btn-soft:hover {
+  box-shadow: 0 7px 0 var(--parchment-d), 0 10px 20px rgba(100,70,40,.18);
+  background: linear-gradient(160deg, var(--paper), var(--parchment-d));
+}
+.btn-soft:active {
+  box-shadow: 0 2px 0 var(--parchment-d), 0 3px 8px rgba(100,70,40,.12) !important;
+}
+
+.btn-lg { padding: 14px 34px; font-size: 1.05rem; }
+
+/* ─────────────────────────────────────────────────────────
+   7. SECTION TITLE — magical storybook label
+   ───────────────────────────────────────────────────────── */
+.section-title {
+  text-align: center;
+  font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+  color: var(--ink);
+  margin-bottom: 40px;
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+/* hand-drawn underline */
+.section-title::after {
+  content: '';
+  display: block;
+  width: 80px; height: 4px;
+  margin: 10px auto 0;
+  background: linear-gradient(90deg, var(--sage-l), var(--sage), var(--sage-l));
+  border-radius: var(--r-full);
+  opacity: .7;
+}
+/* decorative sparkle beside title */
+.section-title::before {
+  content: '✦';
+  font-size: .9rem;
+  color: var(--honey);
+  margin-right: 10px;
+  animation: sparkle 2.5s ease-in-out infinite;
+  display: inline-block;
+}
+
+/* ─────────────────────────────────────────────────────────
+   8. HERO — storybook opening
+   ───────────────────────────────────────────────────────── */
 .hero {
   display: grid;
-  grid-template-columns: 1.1fr 1fr;
+  grid-template-columns: 1.15fr 1fr;
   align-items: center;
   gap: 48px;
   max-width: 1100px;
-  margin: 0 auto;
-  padding: 80px 28px 60px;
+  margin: 40px auto 0;
+  padding: 60px 28px 70px;
+  position: relative;
 }
-.eyebrow {
-  text-transform: uppercase; letter-spacing: .18em; font-size: .8rem;
-  font-weight: 700; color: var(--sage-d); margin-bottom: 14px;
+/* background decorative blobs */
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -60px;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(156,191,142,.18) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none; z-index: 0;
 }
-.hero-title {
-  font-size: clamp(3.5rem, 8vw, 6rem); font-weight: 700;
-  color: var(--ink); margin-bottom: 18px;
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: -30px; left: -50px;
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(245,197,187,.18) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none; z-index: 0;
 }
-.hero-sub { font-size: 1.2rem; color: var(--ink-soft); margin-bottom: 32px; }
 
-/* Hero preview card */
-.hero-art { display: grid; place-items: center; }
+.hero-copy {
+  position: relative; z-index: 1;
+  /* tiny notebook paper lines behind copy */
+  background: linear-gradient(var(--parchment) 1px, transparent 1px);
+  background-size: 100% 28px;
+  background-color: rgba(253,248,239,.7);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 36px 36px 36px;
+  box-shadow: var(--sh), var(--paper-glow);
+}
+/* paper clip decoration */
+.hero-copy::before {
+  content: '';
+  position: absolute; top: -10px; left: 24px;
+  width: 28px; height: 48px;
+  background: linear-gradient(90deg, transparent 30%, var(--blue-d) 30%, var(--blue-d) 45%, var(--blue-l) 45%, var(--blue-l) 55%, var(--blue-d) 55%, var(--blue-d) 70%, transparent 70%);
+  border-radius: 4px 4px 0 0;
+  opacity: .7;
+  z-index: 2;
+}
+/* washi tape corner */
+.hero-copy::after {
+  content: '';
+  position: absolute; top: 10px; right: -12px;
+  width: 40px; height: 20px;
+  background: linear-gradient(105deg, var(--honey), var(--peach));
+  border-radius: 2px;
+  transform: rotate(8deg);
+  opacity: .65;
+  box-shadow: 0 2px 6px rgba(0,0,0,.08);
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: .20em;
+  font-size: .75rem;
+  font-weight: 700;
+  color: var(--sage-d);
+  margin-bottom: 12px;
+  font-family: 'Nunito', sans-serif;
+}
+
+.hero-title {
+  font-size: clamp(3.8rem, 8vw, 6.5rem);
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 16px;
+  line-height: 1.05;
+  /* subtle shimmer on title */
+  background: linear-gradient(120deg, var(--ink) 0%, var(--brown-warm) 50%, var(--ink) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 5s linear infinite;
+}
+
+.hero-sub {
+  font-size: 1.05rem;
+  color: var(--ink-soft);
+  margin-bottom: 28px;
+  line-height: 1.7;
+}
+
+/* ── Hero art: decorative game frame ────────────────────── */
+.hero-art {
+  display: grid;
+  place-items: center;
+  position: relative; z-index: 1;
+}
+/* decorative corner flowers */
+.hero-art::before {
+  content: '✿';
+  position: absolute; top: -20px; right: -10px;
+  font-size: 2rem; color: var(--pink-d);
+  animation: sparkle 3s ease-in-out infinite;
+  z-index: 2;
+}
+.hero-art::after {
+  content: '✦';
+  position: absolute; bottom: 20px; left: -15px;
+  font-size: 1.4rem; color: var(--honey);
+  animation: sparkle 2s ease-in-out infinite .5s;
+  z-index: 2;
+}
+
 .hero-card {
   position: relative;
-  width: min(360px, 100%); aspect-ratio: 1;
-  background: var(--beige);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-lg);
+  width: min(360px, 100%);
+  aspect-ratio: 1;
+  background:
+    linear-gradient(135deg, rgba(200,219,192,.25) 0%, transparent 50%),
+    var(--parchment);
+  border-radius: var(--r-lg);
+  box-shadow:
+    var(--sh-lg),
+    0 0 0 4px var(--white),
+    0 0 0 7px var(--sage-l),
+    0 0 0 10px var(--white),
+    inset 0 2px 8px rgba(255,255,220,.5);
   overflow: hidden;
-  animation: float 5s ease-in-out infinite;
+  animation: float-slow 6s ease-in-out infinite;
 }
-.hero-layer { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
-@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+/* decorative corner ornaments */
+.hero-card::before {
+  content: '';
+  position: absolute; inset: 8px;
+  border: 2px dashed rgba(156,191,142,.35);
+  border-radius: calc(var(--r-lg) - 6px);
+  pointer-events: none; z-index: 10;
+}
+.hero-card::after {
+  content: '🌿';
+  position: absolute; bottom: 12px; right: 14px;
+  font-size: 1.2rem; z-index: 10;
+  animation: wobble 4s ease-in-out infinite;
+}
 
-/* ---------- About ---------- */
-.about { max-width: 1000px; margin: 0 auto; padding: 40px 28px 80px; }
-.section-title { text-align: center; font-size: 2rem; color: var(--ink); margin-bottom: 36px; }
-.about-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.hero-layer {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: contain;
+}
+
+/* ─────────────────────────────────────────────────────────
+   9. ABOUT — scrapbook journal cards
+   ───────────────────────────────────────────────────────── */
+.about {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 20px 28px 80px;
+  position: relative;
+}
+/* dotted separator line above */
+.about::before {
+  content: '';
+  display: block;
+  width: 200px; height: 2px;
+  margin: 0 auto 60px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--sage-l) 0, var(--sage-l) 6px,
+    transparent 6px, transparent 12px
+  );
+  border-radius: var(--r-full);
+}
+
+.about-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
 .about-card {
-  background: var(--white); border-radius: var(--radius); padding: 28px;
-  box-shadow: var(--shadow); text-align: center;
+  background: var(--ivory);
+  border-radius: var(--r-lg);
+  padding: 32px 24px 28px;
+  box-shadow: var(--sh);
+  text-align: center;
+  position: relative;
+  border: 1.5px solid var(--border);
+  transition: transform .25s ease, box-shadow .25s ease;
+  overflow: hidden;
 }
-.about-icon { font-size: 1.8rem; color: var(--sage-d); margin-bottom: 10px; }
-.about-card h3 { font-size: 1.2rem; margin-bottom: 8px; color: var(--ink); }
-.about-card p { color: var(--ink-soft); font-size: .95rem; }
+.about-card:hover {
+  transform: translateY(-6px) rotate(.4deg);
+  box-shadow: var(--sh-lg);
+}
+/* each card gets a unique color accent strip top */
+.about-card:nth-child(1)::before { background: linear-gradient(90deg, var(--pink), var(--peach)); }
+.about-card:nth-child(2)::before { background: linear-gradient(90deg, var(--sage-l), var(--mint)); }
+.about-card:nth-child(3)::before { background: linear-gradient(90deg, var(--blue-l), var(--lavender)); }
+.about-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 6px;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+}
+/* torn paper bottom edge */
+.about-card::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 10px;
+  background:
+    radial-gradient(circle at 10% 0, var(--cream) 50%, transparent 50%),
+    radial-gradient(circle at 30% 0, var(--cream) 50%, transparent 50%),
+    radial-gradient(circle at 50% 0, var(--cream) 50%, transparent 50%),
+    radial-gradient(circle at 70% 0, var(--cream) 50%, transparent 50%),
+    radial-gradient(circle at 90% 0, var(--cream) 50%, transparent 50%);
+  background-size: 20% 100%;
+  background-repeat: no-repeat;
+}
 
-/* ---------- Creator ---------- */
-.creator { max-width: 1100px; margin: 0 auto; padding: 20px 28px 80px; }
+.about-icon {
+  font-size: 2.2rem;
+  margin-bottom: 14px;
+  display: block;
+  animation: float 4s ease-in-out infinite;
+}
+.about-card:nth-child(2) .about-icon { animation-delay: .6s; }
+.about-card:nth-child(3) .about-icon { animation-delay: 1.2s; }
+
+.about-card h3 {
+  font-size: 1.25rem;
+  margin-bottom: 10px;
+  color: var(--ink);
+}
+.about-card p {
+  color: var(--ink-soft);
+  font-size: .92rem;
+  line-height: 1.6;
+}
+
+/* ─────────────────────────────────────────────────────────
+   10. CREATOR — game character studio
+   ───────────────────────────────────────────────────────── */
+.creator {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 28px 80px;
+  position: relative;
+}
+/* small flowers scattered */
+.creator::before {
+  content: '✿ ✦ ✿';
+  position: absolute; top: -10px; right: 40px;
+  font-size: .9rem; color: var(--honey); letter-spacing: 6px;
+  animation: sparkle 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
 .creator-layout {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 32px;
+  gap: 28px;
   align-items: start;
 }
 
-/* Preview */
-.preview-wrap { display: flex; flex-direction: column; gap: 20px; }
+/* ── Preview wrap ────────────────────────────────────────── */
+.preview-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ── Character display frame ─────────────────────────────── */
 .preview-card {
   position: relative;
-  width: 100%; aspect-ratio: 1;
-  background: var(--beige);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-lg);
+  width: 100%;
+  aspect-ratio: 1;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(200,219,192,.3) 0%, transparent 60%),
+    radial-gradient(ellipse at 70% 80%, rgba(245,197,187,.2) 0%, transparent 60%),
+    var(--parchment);
+  border-radius: var(--r-lg);
+  box-shadow:
+    var(--sh-lg),
+    0 0 0 3px var(--white),
+    0 0 0 6px var(--sage-l),
+    inset 0 2px 10px rgba(255,255,210,.4);
   overflow: hidden;
 }
+/* corner ornament: top-left */
+.preview-card::before {
+  content: '✿';
+  position: absolute; top: 10px; left: 12px;
+  font-size: 1.4rem; color: rgba(156,191,142,.6);
+  z-index: 10; pointer-events: none;
+  animation: wobble 5s ease-in-out infinite;
+}
+/* corner ornament: bottom-right */
+.preview-card::after {
+  content: '✦';
+  position: absolute; bottom: 12px; right: 14px;
+  font-size: 1.1rem; color: rgba(240,192,96,.6);
+  z-index: 10; pointer-events: none;
+  animation: sparkle 3s ease-in-out infinite 1s;
+}
+
 .preview-card .layer {
   position: absolute; inset: 0;
-  width: 100%; height: 100%; object-fit: contain;
+  width: 100%; height: 100%;
+  object-fit: contain;
   transition: opacity .15s ease;
 }
-.preview-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 
-/* Panel */
+.preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* ── Panel: wardrobe notebook ─────────────────────────────── */
 .panel {
-  background: var(--white);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 20px;
-  min-height: 420px;
+  background:
+    linear-gradient(var(--parchment) 1px, transparent 1px),
+    var(--ivory);
+  background-size: 100% 30px;
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh), var(--paper-glow);
+  padding: 22px 20px;
+  min-height: 460px;
+  border: 1.5px solid var(--border);
+  position: relative;
+  overflow: hidden;
 }
-.tabs {
-  display: flex; flex-wrap: wrap; gap: 8px;
-  margin-bottom: 20px;
+/* spiral notebook rings on left edge */
+.panel::before {
+  content: '';
+  position: absolute; top: 0; left: 18px; bottom: 0;
+  width: 2px;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0, transparent 10px,
+    var(--parchment-d) 10px, var(--parchment-d) 24px
+  );
+  border-radius: var(--r-full);
+  opacity: .5;
+  pointer-events: none;
 }
-.tab {
-  font-family: inherit; font-weight: 600; font-size: .9rem;
-  padding: 8px 16px; border-radius: 999px;
-  border: 1.5px solid var(--beige-2);
-  background: var(--cream); color: var(--ink-soft);
-  cursor: pointer; transition: all .2s;
+/* small bookmark tab top-right */
+.panel::after {
+  content: 'My\AWardrobe';
+  white-space: pre;
+  position: absolute; top: 0; right: 20px;
+  background: linear-gradient(160deg, var(--sage-l), var(--mint));
+  color: var(--ink);
+  font-size: .65rem; font-weight: 700;
+  padding: 4px 10px 10px;
+  border-radius: 0 0 var(--r-sm) var(--r-sm);
+  box-shadow: var(--sh-xs);
+  text-align: center;
+  line-height: 1.4;
+  letter-spacing: .04em;
+  pointer-events: none;
 }
-.tab:hover { border-color: var(--sage); color: var(--ink); }
-.tab.active { background: var(--sage-d); color: var(--white); border-color: var(--sage-d); }
 
-/* Options grid */
-.options { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+/* ── Category Tabs — sticker style ───────────────────────── */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 20px;
+  padding-left: 28px; /* offset for spine rings */
+}
+
+.tab {
+  font-family: 'Nunito', inherit;
+  font-weight: 700;
+  font-size: .8rem;
+  padding: 6px 14px;
+  border-radius: var(--r-full);
+  border: 1.5px solid var(--border);
+  background: var(--ivory);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: all .18s ease;
+  box-shadow: var(--sh-xs);
+  position: relative;
+}
+.tab:hover {
+  border-color: var(--sage);
+  color: var(--ink);
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: var(--sh-sm);
+  background: var(--paper);
+}
+.tab.active {
+  background: linear-gradient(135deg, var(--sage), var(--sage-dk));
+  color: var(--white);
+  border-color: var(--sage-dk);
+  box-shadow: 0 4px 0 var(--sage-dk), 0 6px 14px rgba(78,114,72,.3);
+  transform: translateY(-2px);
+  text-shadow: 0 1px 2px rgba(0,0,0,.2);
+  animation: stamp-in .3s ease;
+}
+/* sticker shine on active tab */
+.tab.active::after {
+  content: '';
+  position: absolute; top: 3px; left: 6px;
+  width: 14px; height: 4px;
+  background: rgba(255,255,255,.35);
+  border-radius: var(--r-full);
+  pointer-events: none;
+}
+
+/* ── Options Grid — collectible item cards ───────────────── */
+.options {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding-left: 28px;
+}
+
 .option {
   position: relative;
   aspect-ratio: 1;
-  border-radius: var(--radius-sm);
-  border: 2px solid transparent;
-  background: var(--cream);
-  cursor: pointer; overflow: hidden;
-  transition: transform .15s, border-color .2s, box-shadow .2s;
-  padding: 4px;
+  border-radius: var(--r-sm);
+  border: 2px solid var(--border);
+  background: linear-gradient(135deg, var(--ivory), var(--parchment));
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s;
+  padding: 5px;
+  box-shadow: var(--sh-xs);
 }
-.option:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
-.option img { width: 100%; height: 100%; object-fit: contain; }
-.option.active { border-color: var(--sage-d); box-shadow: 0 0 0 3px rgba(122,155,110,.2); }
+.option::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.4) 0%, transparent 60%);
+  border-radius: inherit;
+  pointer-events: none; z-index: 1;
+}
+.option:hover {
+  transform: translateY(-4px) scale(1.04);
+  box-shadow: var(--sh-sm), 0 0 0 2px var(--sage-l);
+  border-color: var(--sage);
+  background: linear-gradient(135deg, var(--paper), var(--ivory));
+}
+.option img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  transition: transform .2s ease;
+}
+.option:hover img { transform: scale(1.06); }
+
+.option.active {
+  border-color: var(--sage-d);
+  background: linear-gradient(135deg, rgba(156,191,142,.15), rgba(107,148,96,.08));
+  box-shadow:
+    var(--sh-sm),
+    0 0 0 3px rgba(156,191,142,.5),
+    inset 0 1px 4px rgba(107,148,96,.1);
+}
+/* sparkle on selected item */
+.option.active::after {
+  content: '✦';
+  position: absolute; top: 3px; right: 4px;
+  font-size: .55rem; color: var(--honey);
+  z-index: 3;
+  animation: sparkle 1.5s ease-in-out infinite;
+}
+
 .option .opt-label {
-  position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
-  font-size: .65rem; color: var(--ink-soft); background: rgba(255,255,255,.8);
-  padding: 1px 6px; border-radius: 6px; white-space: nowrap;
+  position: absolute; bottom: 3px; left: 50%;
+  transform: translateX(-50%);
+  font-size: .6rem;
+  color: var(--ink-light);
+  background: rgba(253,248,239,.85);
+  padding: 1px 6px;
+  border-radius: var(--r-xs);
+  white-space: nowrap;
+  z-index: 2;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 600;
 }
-/* "None" option button */
 .option .none-mark {
   position: absolute; inset: 0;
   display: grid; place-items: center;
-  font-size: 1.6rem; color: var(--ink-soft); font-weight: 700;
+  font-size: 1.5rem;
+  color: var(--ink-light);
+  font-weight: 700;
+  z-index: 2;
 }
 
-/* ---------- Footer ---------- */
+/* ─────────────────────────────────────────────────────────
+   11. FOOTER — cozy bottom strip
+   ───────────────────────────────────────────────────────── */
 .footer {
-  text-align: center; padding: 32px 28px;
-  color: var(--ink-soft); font-size: .9rem;
-  border-top: 1px solid var(--beige-2);
+  text-align: center;
+  padding: 28px 28px 36px;
+  color: var(--ink-soft);
+  font-size: .88rem;
+  position: relative;
+}
+/* dotted top border */
+.footer::before {
+  content: '';
+  display: block;
+  width: 160px; height: 2px;
+  margin: 0 auto 20px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--sage-l) 0, var(--sage-l) 5px,
+    transparent 5px, transparent 10px
+  );
+  border-radius: var(--r-full);
+}
+.footer::after {
+  content: '✿ CACTUS ✿';
+  display: block;
+  font-size: .7rem;
+  letter-spacing: .2em;
+  color: var(--ink-light);
+  margin-top: 8px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
 }
 
-/* ---------- Responsive ---------- */
-@media (max-width: 860px) {
-  .hero { grid-template-columns: 1fr; text-align: center; padding: 48px 20px 40px; }
-  .hero-art { order: -1; }
-  .about-grid { grid-template-columns: 1fr; }
-  .creator-layout { grid-template-columns: 1fr; }
-  .options { grid-template-columns: repeat(4, 1fr); }
-  .nav-links { gap: 16px; }
-  .nav-links a { font-size: .9rem; }
+/* ─────────────────────────────────────────────────────────
+   12. FLOATING DECO — background petals / stars
+   ───────────────────────────────────────────────────────── */
+/* CSS-only floating deco dots behind sections */
+body::before {
+  content: '✦';
+  position: fixed; top: 18%; left: 4%;
+  font-size: 1.1rem; color: rgba(240,192,96,.3);
+  pointer-events: none; z-index: 0;
+  animation: float 7s ease-in-out infinite;
 }
-@media (max-width: 480px) {
+body::after {
+  content: '✿';
+  position: fixed; top: 60%; right: 5%;
+  font-size: 1.3rem; color: rgba(245,197,187,.4);
+  pointer-events: none; z-index: 0;
+  animation: float 9s ease-in-out infinite .8s;
+}
+
+/* ─────────────────────────────────────────────────────────
+   13. RESPONSIVE
+   ───────────────────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .nav {
+    top: 8px;
+    margin: 8px 12px 0;
+    max-width: calc(100% - 24px);
+    padding: 10px 16px 10px 12px;
+  }
+
+  .hero {
+    grid-template-columns: 1fr;
+    text-align: center;
+    padding: 40px 20px 50px;
+    margin-top: 20px;
+    gap: 32px;
+  }
+  .hero-art { order: -1; }
+  .hero-copy::before { left: 50%; transform: translateX(-50%); }
+  .hero-copy::after { display: none; }
+
+  .about-grid { grid-template-columns: 1fr; gap: 16px; }
+
+  .creator-layout { grid-template-columns: 1fr; }
+
+  .options { grid-template-columns: repeat(4, 1fr); }
+
+  .nav-links { gap: 4px; }
+  .nav-links a { font-size: .82rem; padding: 6px 12px; }
+
+  .panel::after { display: none; }
+  .panel::before { display: none; }
+  .tabs { padding-left: 0; }
+  .options { padding-left: 0; }
+}
+
+@media (max-width: 540px) {
   .options { grid-template-columns: repeat(3, 1fr); }
   .hero-title { font-size: 3.5rem; }
   .preview-actions .btn { flex: 1 1 auto; }
+  .nav-links a { padding: 5px 10px; font-size: .78rem; }
+  .hero-copy { padding: 24px 20px; }
 }
