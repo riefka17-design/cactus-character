@@ -7,136 +7,234 @@
   <meta name="description" content="Create a tiny version of yourself. Design your own character before joining our workshop." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
   <!-- ============ NAVBAR ============ -->
   <header class="nav">
-    <a href="#home" class="nav-logo">
+    <a href="#" class="nav-logo" data-nav="home">
       <span class="nav-mark" aria-hidden="true">
         <svg viewBox="0 0 32 32" width="28" height="28"><circle cx="16" cy="16" r="14" fill="#c9d8c0"/><path d="M16 6c-3 0-5 3-5 7 0 2 1 3 2 4-2 1-3 3-3 5 0 2 2 4 6 4s6-2 6-4c0-2-1-4-3-5 1-1 2-2 2-4 0-4-2-7-5-7z" fill="#7a9b6e"/></svg>
       </span>
       <span class="nav-name">Cactus</span>
     </a>
-    <nav class="nav-links">
-      <a href="#home">Home</a>
-      <a href="#create">Create</a>
-      <a href="#about">About</a>
+    <nav class="nav-links" id="nav-links">
+      <a href="#" data-nav="home"      data-scroll="home"   class="nav-link">Home</a>
+      <a href="#" data-nav="home"      data-scroll="about"  class="nav-link">About</a>
+      <a href="#" data-nav="home"      data-scroll="create" class="nav-link">Create</a>
+      <a href="#" data-nav="workshops"                      class="nav-link nav-link-reg">Registration</a>
+      <a href="#" data-nav="dashboard"                      class="nav-link nav-link-dash">My Workshop</a>
     </nav>
+    <button class="nav-burger" id="nav-burger" aria-label="Open menu">☰</button>
   </header>
 
-  <main>
+  <!-- ============ PAGE: MAIN (Home + Create + About) ============ -->
+  <div id="page-main" class="page active">
+    <main>
 
-    <!-- ============ HOME / HERO ============ -->
-    <section id="home" class="hero">
-      <div class="hero-copy">
-        <p class="eyebrow">Character You with Us</p>
-        <h1 class="hero-title">Cactus</h1>
-        <p class="hero-sub">
-          Create a tiny version of yourself.<br />
-          Design your own character before joining our workshop.
-        </p>
-        <a href="#create" class="btn btn-primary btn-lg">Start Creating</a>
-      </div>
-
-      <div class="hero-art" aria-hidden="true">
-        <div class="hero-card">
-          <!-- A little preview stack of sample layers -->
-          <img src="/assets/background/bg1.png" alt="" class="hero-layer" />
-          <img src="/assets/body/body1.png" alt="" class="hero-layer" />
-          <img src="/assets/skin/skin1.png" alt="" class="hero-layer" />
-          <img src="/assets/naturalflush/naturalflush1.png" alt="" class="hero-layer" />
-          <img src="/assets/hair/hair1.png" alt="" class="hero-layer" />
-          <img src="/assets/eyebrows/brows1.png" alt="" class="hero-layer" />
-          <img src="/assets/eyes/eyes1.png" alt="" class="hero-layer" />
-          <img src="/assets/mouth/mouth1.png" alt="" class="hero-layer" />
-          <img src="/assets/blush/blush1.png" alt="" class="hero-layer" />
-          <img src="/assets/tops/top1.png" alt="" class="hero-layer" />
-          <img src="/assets/accessories/acc1.png" alt="" class="hero-layer" />
-          <img src="assets/hobbies/hobby1.png" alt="" class="hero-layer" />
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ ABOUT ============ -->
-    <section id="about" class="about">
-      <h2 class="section-title">A cozy little workshop</h2>
-      <div class="about-grid">
-        <div class="about-card">
-          <div class="about-icon">✿</div>
-          <h3>Design</h3>
-          <p>Pick a skin tone, hair, outfit, and hobby. Build a character that feels like you.</p>
-        </div>
-        <div class="about-card">
-          <div class="about-icon">✦</div>
-          <h3>Join</h3>
-          <p>Bring your character to our workshop. We'll turn it into something real.</p>
-        </div>
-        <div class="about-card">
-          <div class="about-icon">❤</div>
-          <h3>Keep</h3>
-          <p>Leave with a cute keychain of your character, printed just for you.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ AVATAR CREATOR ============ -->
-    <section id="create" class="creator">
-      <h2 class="section-title">Make your character</h2>
-
-      <div class="creator-layout">
-
-        <!-- LEFT: avatar preview -->
-        <div class="preview-wrap">
-          <div class="preview-card" id="preview">
-            <!-- Layered images. Order here matches the stack order. -->
-            <img class="layer" data-layer="background" src="/assets/background/bg1.png" alt="" />
-            <img class="layer" data-layer="body"     src="/assets/body/body1.png"     alt="" />
-            <img class="layer" data-layer="skin"     src="/assets/skin/skin1.png" alt="" />
-            <img class="layer" data-layer="naturalflush"     src="/assets/naturalflush/naturalflush1.png" alt="" />
-            <img class="layer" data-layer="hair"     src="/assets/hair/hair1.png"     alt="" />
-            <img class="layer" data-layer="eyes"     src="/assets/eyes/eyes1.png"     alt="" />
-            <img class="layer" data-layer="eyebrows" src="/assets/eyebrows/brows1.png" alt="" />
-            <img class="layer" data-layer="mouth"    src="/assets/mouth/mouth1.png"   alt="" />
-            <img class="layer" data-layer="blush"    src="/assets/blush/blush1.png"   alt="" />
-            <img class="layer" data-layer="hijab"    src="/assets/hijab/hijab1.png"   alt="" />
-            <!-- Modest base layer: a simple white tee + shorts so the
-                 character is never bare when no clothing is chosen. -->
-            <img class="layer" data-layer="base"      src="/assets/body/base1.png"     alt="" />
-            <img class="layer" data-layer="bottom"   src="/assets/bottoms/bottom1.png" alt="" />
-            <img class="layer" data-layer="top"      src="/assets/tops/top1.png"      alt="" />
-            <img class="layer" data-layer="dress"    src="/assets/dress/dress1.png"   alt="" />
-            <img class="layer" data-layer="shoes"    src="/assets/shoes/shoes1.png"   alt="" />
-            <img class="layer" data-layer="accessory" src="/assets/accessories/acc1.png" alt="" />
-            <img class="layer" data-layer="hobby"    src="/assets/hobbies/hobby1.png" alt="" />
-          </div>
-
-          <div class="preview-actions">
-            <button class="btn btn-soft" id="btn-random">Random</button>
-            <button class="btn btn-soft" id="btn-reset">Reset</button>
-            <button class="btn btn-primary" id="btn-download">Download PNG</button>
+      <!-- HERO -->
+      <section id="home" class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Character You with Us</p>
+          <h1 class="hero-title">Cactus</h1>
+          <p class="hero-sub">
+            Create a tiny version of yourself.<br />
+            Design your own character before joining our workshop.
+          </p>
+          <div class="hero-cta-group">
+            <a href="#" class="btn btn-primary btn-lg" data-nav="home" data-scroll="create">Start Creating</a>
+            <a href="#" class="btn btn-soft btn-lg"    data-nav="workshops">Browse Workshops</a>
           </div>
         </div>
 
-        <!-- RIGHT: customization panel -->
-        <div class="panel">
-          <!-- Category tabs -->
-          <div class="tabs" id="tabs"></div>
-          <!-- Options for the active category -->
-          <div class="options" id="options"></div>
+        <div class="hero-art" aria-hidden="true">
+          <div class="hero-card">
+            <img src="/assets/background/bg1.png"   alt="" class="hero-layer" />
+            <img src="/assets/body/body1.png"       alt="" class="hero-layer" />
+            <img src="/assets/skin/skin1.png"       alt="" class="hero-layer" />
+            <img src="/assets/hair/hair1.png"       alt="" class="hero-layer" />
+            <img src="/assets/eyes/eyes1.png"       alt="" class="hero-layer" />
+            <img src="/assets/mouth/mouth1.png"     alt="" class="hero-layer" />
+            <img src="/assets/blush/blush1.png"     alt="" class="hero-layer" />
+            <img src="/assets/tops/top1.png"        alt="" class="hero-layer" />
+            <img src="/assets/accessories/acc3.png" alt="" class="hero-layer" />
+            <img src="/assets/hobbies/hobby3.png"   alt="" class="hero-layer" />
+          </div>
         </div>
+      </section>
 
+      <!-- ABOUT -->
+      <section id="about" class="about">
+        <h2 class="section-title">A cozy little workshop</h2>
+        <div class="about-grid">
+          <div class="about-card">
+            <div class="about-icon">✿</div>
+            <h3>Design</h3>
+            <p>Pick a skin tone, hair, outfit, and hobby. Build a character that feels like you.</p>
+          </div>
+          <div class="about-card">
+            <div class="about-icon">✦</div>
+            <h3>Join</h3>
+            <p>Bring your character to our workshop. We'll turn it into something real.</p>
+          </div>
+          <div class="about-card">
+            <div class="about-icon">❤</div>
+            <h3>Keep</h3>
+            <p>Leave with a cute keychain of your character, printed just for you.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- CREATOR -->
+      <section id="create" class="creator">
+        <h2 class="section-title">Make your character</h2>
+
+        <div class="creator-layout">
+
+          <!-- LEFT: avatar preview -->
+          <div class="preview-wrap">
+            <div class="preview-card" id="preview">
+              <img class="layer" data-layer="background"  src="/assets/background/bg1.png"  alt="" />
+              <img class="layer" data-layer="body"        src="/assets/body/body1.png"      alt="" />
+              <img class="layer" data-layer="skin"        src="/assets/skin/skin1.png"      alt="" />
+              <img class="layer" data-layer="hair"        src="/assets/hair/hair1.png"      alt="" />
+              <img class="layer" data-layer="eyes"        src="/assets/eyes/eyes1.png"      alt="" />
+              <img class="layer" data-layer="eyebrows"    src="/assets/eyebrows/brows1.png" alt="" />
+              <img class="layer" data-layer="mouth"       src="/assets/mouth/mouth1.png"    alt="" />
+              <img class="layer" data-layer="blush"       src="/assets/blush/blush1.png"    alt="" />
+              <img class="layer" data-layer="hijab"       src="/assets/hijab/hijab1.png"    alt="" />
+              <img class="layer" data-layer="base"        src="/assets/body/base1.png"      alt="" />
+              <img class="layer" data-layer="top"         src="/assets/tops/top1.png"       alt="" />
+              <img class="layer" data-layer="bottom"      src="/assets/bottoms/bottom1.png" alt="" />
+              <img class="layer" data-layer="dress"       src="/assets/dress/dress1.png"    alt="" />
+              <img class="layer" data-layer="shoes"       src="/assets/shoes/shoes1.png"    alt="" />
+              <img class="layer" data-layer="accessory"   src="/assets/accessories/acc1.png" alt="" />
+              <img class="layer" data-layer="hobby"       src="/assets/hobbies/hobby1.png"  alt="" />
+            </div>
+
+            <div class="preview-actions">
+              <button class="btn btn-soft" id="btn-random">Random</button>
+              <button class="btn btn-soft" id="btn-reset">Reset</button>
+              <button class="btn btn-primary" id="btn-download">Download PNG</button>
+            </div>
+
+            <div class="creator-reg-cta">
+              <p class="creator-reg-hint">✦ Love your character? Take them to a workshop!</p>
+              <a href="#" class="btn btn-primary btn-lg" data-nav="workshops">Browse Workshops</a>
+            </div>
+          </div>
+
+          <!-- RIGHT: customization panel -->
+          <div class="panel">
+            <div class="tabs"    id="tabs"></div>
+            <div class="options" id="options"></div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="footer">
+      <p>Cactus — Character You with Us. A cozy DIY workshop.</p>
+    </footer>
+  </div><!-- /page-main -->
+
+  <!-- ============ PAGE: WORKSHOPS LISTING ============ -->
+  <div id="page-workshops" class="page">
+    <div class="subpage-wrap">
+      <div class="subpage-header">
+        <button class="btn btn-soft btn-back" data-nav="home"><span>←</span> Home</button>
+        <div class="subpage-heading">
+          <p class="eyebrow">Choose your adventure</p>
+          <h2 class="subpage-title">Upcoming Workshops</h2>
+          <p class="subpage-desc">Pick a workshop that feels like you — your CACTUS character will come along for the ride.</p>
+        </div>
       </div>
-    </section>
 
-  </main>
+      <div class="workshops-grid" id="workshops-grid">
+        <div class="workshops-loading">
+          <span class="loading-spinner"></span>
+          <p>Finding cozy workshops for you…</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <!-- ============ FOOTER ============ -->
-  <footer class="footer">
-    <p>Cactus — Character You with Us. A cozy DIY workshop.</p>
-  </footer>
+  <!-- ============ PAGE: WORKSHOP DETAIL ============ -->
+  <div id="page-workshop-detail" class="page">
+    <div class="subpage-wrap">
+      <button class="btn btn-soft btn-back" id="detail-back"><span>←</span> All Workshops</button>
+      <div id="detail-content">
+        <!-- filled by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PAGE: REGISTRATION (multi-step) ============ -->
+  <div id="page-register" class="page">
+    <div class="subpage-wrap">
+      <button class="btn btn-soft btn-back" id="reg-back"><span>←</span> Workshop</button>
+
+      <!-- Progress steps -->
+      <div class="reg-progress" id="reg-progress">
+        <div class="reg-step active" data-step="1">
+          <div class="reg-step-circle">1</div>
+          <span class="reg-step-label">Personal Info</span>
+        </div>
+        <div class="reg-step-line"></div>
+        <div class="reg-step" data-step="2">
+          <div class="reg-step-circle">2</div>
+          <span class="reg-step-label">Your Character</span>
+        </div>
+        <div class="reg-step-line"></div>
+        <div class="reg-step" data-step="3">
+          <div class="reg-step-circle">3</div>
+          <span class="reg-step-label">Review</span>
+        </div>
+      </div>
+
+      <div id="reg-content">
+        <!-- filled by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PAGE: PAYMENT ============ -->
+  <div id="page-payment" class="page">
+    <div class="subpage-wrap">
+      <div id="payment-content">
+        <!-- filled by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PAGE: CONFIRMATION / TICKET ============ -->
+  <div id="page-confirmation" class="page">
+    <div class="subpage-wrap">
+      <div id="confirmation-content">
+        <!-- filled by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PAGE: DASHBOARD ============ -->
+  <div id="page-dashboard" class="page">
+    <div class="subpage-wrap">
+      <div class="subpage-header">
+        <button class="btn btn-soft btn-back" data-nav="home"><span>←</span> Home</button>
+        <div class="subpage-heading">
+          <p class="eyebrow">Your adventure diary</p>
+          <h2 class="subpage-title">My Workshop</h2>
+        </div>
+      </div>
+      <div id="dashboard-content">
+        <!-- filled by JS -->
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="main.js"></script>
 </body>
