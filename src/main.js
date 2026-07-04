@@ -1,6 +1,6 @@
 /* =========================================================
    CACTUS — Character You with Us
-   Vanilla JS + Supabase. No frameworks.
+   Vanilla JS + Supabase. With Authentication.
    ========================================================= */
 
 'use strict';
@@ -13,8 +13,6 @@ const SUPABASE_URL      = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  // This is the #1 cause of "nothing works" bugs: the env vars aren't
-  // actually set (or aren't prefixed with VITE_) at build time.
   console.error(
     '[CACTUS] Missing Supabase env vars. VITE_SUPABASE_URL:',
     SUPABASE_URL, 'VITE_SUPABASE_ANON_KEY set:', !!SUPABASE_ANON_KEY
@@ -23,26 +21,151 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-/* Small helper so every Supabase error is visible in the console
-   instead of silently vanishing behind a generic UI message. */
+/* Small helper so every Supabase error is visible in the console */
 function logSupabaseError(context, error) {
-  if (!error) return;
-  console.error(`[CACTUS] Supabase error in ${context}:`, {
-    message: error.message,
-    details: error.details,
-    hint: error.hint,
-    code: error.code,
-  });
+  console.error(context, error);
+  console.log(JSON.stringify(error, null, 2));
 }
 
-/* Turn a Supabase error into a readable string for the UI.
-   Falls back to a generic message only if nothing useful exists. */
 function friendlyError(error, fallback) {
   if (!error) return fallback;
   if (error.code === '42501') {
-    return 'Permission denied by Supabase (Row Level Security). Ask the site owner to add an insert/select policy for this table.';
+    return 'Permission denied. Please contact support.';
+  }
+  if (error.message?.includes('Invalid login credentials')) {
+    return 'Invalid email or password. Please try again.';
+  }
+  if (error.message?.includes('User already registered')) {
+    return 'An account with this email already exists. Please sign in instead.';
+  }
+  if (error.message?.includes('Password should be at least')) {
+    return 'Password must be at least 6 characters.';
   }
   return error.message || error.details || fallback;
+}
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ─────────────────────────────────────────────────────────
+   AUTHENTICATION STATE
+   ───────────────────────────────────────────────────────── */
+let currentUser = null;
+let authReady = false;
+
+async function checkAuth() {
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) {
+      console.error('[CACTUS] Error getting session:', error);
+      authReady = true;
+      updateNavForAuth();
+      return null;
+    }
+    if (session?.user) {
+      currentUser = session.user;
+      await ensureProfile(currentUser);
+    }
+    authReady = true;
+    updateNavForAuth();
+    return currentUser;
+  } catch (err) {
+    console.error('[CACTUS] checkAuth error:', err);
+    authReady = true;
+    updateNavForAuth();
+    return null;
+  }
+}
+
+async function ensureProfile(user) {
+  if (!user) return;
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (!data) {
+      // Profile doesn't exist, create it
+      await supabase.from('profiles').insert({
+        id: user.id,
+        display_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+      });
+    }
+  } catch (err) {
+    console.error('[CACTUS] ensureProfile error:', err);
+  }
+}
+
+async function signOut() {
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    currentUser = null;
+    updateNavForAuth();
+    navigateTo('main');
+  } catch (err) {
+    console.error('[CACTUS] signOut error:', err);
+  }
+}
+
+// Listen for auth changes - this handles session persistence automatically
+supabase.auth.onAuthStateChange((event, session) => {
+  console.log('[CACTUS] Auth state changed:', event, session?.user?.email);
+  (async () => {
+    if (session?.user) {
+      currentUser = session.user;
+      await ensureProfile(currentUser);
+    } else {
+      currentUser = null;
+    }
+    updateNavForAuth();
+    // Refresh data if on relevant pages
+    if (authReady) {
+      if (currentPage === 'dashboard') renderDashboard();
+      if (currentPage === 'workshops') loadWorkshops();
+    }
+  })();
+});
+
+function updateNavForAuth() {
+  const authLink = document.getElementById('nav-auth-link');
+  const dashLink = document.querySelector('.nav-link-dash');
+
+  if (currentUser) {
+    // Change sign in to sign out
+    if (authLink) {
+      authLink.textContent = 'Sign Out';
+      authLink.removeAttribute('data-nav');
+      authLink.id = 'nav-signout-link';
+      authLink.removeEventListener('click', handleAuthClick);
+      authLink.addEventListener('click', handleSignOutClick);
+    }
+    if (dashLink) dashLink.style.display = '';
+  } else {
+    // Change back to sign in
+    const signOutLink = document.getElementById('nav-signout-link');
+    if (signOutLink) {
+      signOutLink.textContent = 'Sign In';
+      signOutLink.setAttribute('data-nav', 'auth');
+      signOutLink.id = 'nav-auth-link';
+      signOutLink.removeEventListener('click', handleSignOutClick);
+      signOutLink.addEventListener('click', handleAuthClick);
+    }
+    if (dashLink) dashLink.style.display = 'none';
+  }
+}
+
+function handleAuthClick(e) {
+  e.preventDefault();
+  navigateTo('auth');
+}
+
+function handleSignOutClick(e) {
+  e.preventDefault();
+  signOut();
 }
 
 /* ─────────────────────────────────────────────────────────
@@ -57,8 +180,6 @@ const CATEGORIES = [
 { file: 'skin5.png', name: 'Mocha' },
 { file: 'skin6.png', name: 'Avatar' }
 ]},
-
-
 { id: 'naturalflush', label: 'Natural Flush', folder: 'naturalflush', options: [
 { file: 'naturalflush1.png', name: 'Soft Pink' },
 { file: 'naturalflush2.png', name: 'Rose Pink' },
@@ -71,8 +192,6 @@ const CATEGORIES = [
 { file: 'naturalflush9.png', name: 'Cocoa Rose' },
 { file: 'naturalflush10.png', name: 'None' }
 ]},
-
-
 { id: 'hair', label: 'Hair', folder: 'hair', options: [
 { file: 'hair1.png', name: 'Sakura Pink Short Bob' },
 { file: 'hair2.png', name: 'Ice Blue Short Bob' },
@@ -87,8 +206,6 @@ const CATEGORIES = [
 { file: 'hair11.png', name: 'Yellow Classic Bun' },
 { file: 'hair12.png', name: 'None' }
 ]},
-
-
 { id: 'eyes', label: 'Eyes', folder: 'eyes', options: [
 { file: 'eyes1.png', name: 'Innocent Cocoa' },
 { file: 'eyes2.png', name: 'Gentle Purple' },
@@ -109,8 +226,6 @@ const CATEGORIES = [
 { file: 'eyes17.png', name: 'Soft Emerald' },
 { file: 'eyes18.png', name: 'Soft Wood' }
 ]},
-
-
 { id: 'eyebrows', label: 'Eyebrows', folder: 'eyebrows', options: [
 { file: 'brows1.png', name: 'Soft Arch' },
 { file: 'brows2.png', name: 'Gentle Arch' },
@@ -120,8 +235,6 @@ const CATEGORIES = [
 { file: 'brows6.png', name: 'Cute Curve' },
 { file: 'brows7.png', name: 'None' }
 ]},
-
-
 { id: 'mouth', label: 'Mouth', folder: 'mouth', options: [
 { file: 'mouth1.png', name: 'Smile' },
 { file: 'mouth2.png', name: 'Frown' },
@@ -130,8 +243,6 @@ const CATEGORIES = [
 { file: 'mouth5.png', name: 'Pout' },
 { file: 'mouth6.png', name: 'Grin' }
 ]},
-
-
 { id: 'blush', label: 'Blush', folder: 'blush', options: [
 { file: 'blush1.png', name: 'Stripe Blush' },
 { file: 'blush2.png', name: 'Cheek Blush' },
@@ -139,26 +250,18 @@ const CATEGORIES = [
 { file: 'blush4.png', name: 'Side Stripe Blush' },
 { file: 'blush5.png', name: 'None' }
 ]},
-
-
 { id: 'hijab', label: 'Hijab', folder: 'hijab', options: [
 { file: 'hijab1.png', name: 'None' }
 ]},
-
-
 { id: 'top', label: 'Top', folder: 'tops', options: [
 { file: 'top1.png', name: 'Top 1' },
 { file: 'top2.png', name: 'Top 2' },
 { file: 'top5.png', name: 'None' }
 ]},
-
-
 { id: 'bottom', label: 'Bottom', folder: 'bottoms', options: [
 { file: 'bottom1.png', name: 'Bottom 1' },
 { file: 'bottom4.png', name: 'None' }
 ]},
-
-
 { id: 'dress', label: 'Dress', folder: 'dress', options: [
 { file: 'dress1.png', name: 'Dress 1' },
 { file: 'dress2.png', name: 'Dress 2' },
@@ -166,8 +269,6 @@ const CATEGORIES = [
 { file: 'dress4.png', name: 'Dress 4' },
 { file: 'dress5.png', name: 'None' }
 ]},
-
-
 { id: 'accessory', label: 'Accessories', folder: 'accessories', options: [
 { file: 'acc1.png', name: 'Acc 1' },
 { file: 'acc2.png', name: 'Acc 2' },
@@ -175,8 +276,6 @@ const CATEGORIES = [
 { file: 'acc4.png', name: 'Acc 4' },
 { file: 'acc5.png', name: 'None' }
 ]},
-
-
 { id: 'hobby', label: 'Hobby', folder: 'hobbies', options: [
 { file: 'hobby1.png', name: 'Hobby 1' },
 { file: 'hobby2.png', name: 'Hobby 2' },
@@ -184,8 +283,6 @@ const CATEGORIES = [
 { file: 'hobby4.png', name: 'Hobby 4' },
 { file: 'hobby5.png', name: 'None' }
 ]},
-
-
 { id: 'background', label: 'Background', folder: 'background', options: [
 { file: 'bg1.png', name: 'Plain White' },
 { file: 'bg2.png', name: 'Soft Blue' },
@@ -203,7 +300,6 @@ const CATEGORIES = [
 ]},
 ];
 
-/* Helper: look up the {file, name} option object for a category + filename */
 function findOption(cat, filename) {
   return cat.options.find(o => o.file === filename) || null;
 }
@@ -272,7 +368,7 @@ function addMyRegistration(entry) {
 /* ─────────────────────────────────────────────────────────
    4. ROUTER
    ───────────────────────────────────────────────────────── */
-const PAGE_IDS = ['main','workshops','workshop-detail','register','payment','confirmation','dashboard'];
+const PAGE_IDS = ['main','workshops','workshop-detail','register','payment','confirmation','dashboard','auth'];
 let currentPage = 'main';
 
 function navigateTo(pageId, params = {}) {
@@ -285,9 +381,9 @@ function navigateTo(pageId, params = {}) {
   document.querySelectorAll('.nav-link').forEach(a => {
     a.classList.remove('nav-active');
     const nav = a.dataset.nav;
-    if (pageId === 'main'            && nav === 'home')       a.classList.add('nav-active');
+    if (pageId === 'main' && nav === 'home') a.classList.add('nav-active');
     if (['workshops','workshop-detail','register','payment','confirmation'].includes(pageId) && nav === 'workshops') a.classList.add('nav-active');
-    if (pageId === 'dashboard'       && nav === 'dashboard')  a.classList.add('nav-active');
+    if (pageId === 'dashboard' && nav === 'dashboard') a.classList.add('nav-active');
   });
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -298,12 +394,21 @@ function navigateTo(pageId, params = {}) {
     }, 120);
   }
 
-  if (pageId === 'workshops')                              loadWorkshops();
-  if (pageId === 'dashboard')                              renderDashboard();
-  if (pageId === 'workshop-detail' && params.workshopId)  loadWorkshopDetail(params.workshopId);
-  if (pageId === 'register'        && params.workshopId)  initRegistration(params.workshopId);
-  if (pageId === 'payment')                                renderPaymentPage();
-  if (pageId === 'confirmation'    && params.registrationId) renderConfirmation(params.registrationId);
+  if (pageId === 'auth') renderAuthPage();
+  if (pageId === 'workshops') loadWorkshops();
+  if (pageId === 'dashboard') renderDashboard();
+  if (pageId === 'workshop-detail' && params.workshopId) loadWorkshopDetail(params.workshopId);
+  if (pageId === 'register' && params.workshopId) initRegistration(params.workshopId);
+  if (pageId === 'payment') renderPaymentPage();
+  if (pageId === 'confirmation' && params.registrationId) renderConfirmation(params.registrationId);
+}
+
+function requireAuth(redirectTo = 'auth') {
+  if (!currentUser) {
+    navigateTo(redirectTo);
+    return false;
+  }
+  return true;
 }
 
 /* ─────────────────────────────────────────────────────────
@@ -315,6 +420,7 @@ document.addEventListener('click', e => {
   e.preventDefault();
   const page   = trigger.dataset.nav;
   const scroll = trigger.dataset.scroll || null;
+
   if (page === 'home') {
     navigateTo('main', scroll ? { scroll } : {});
   } else {
@@ -331,7 +437,7 @@ document.getElementById('nav-links')?.addEventListener('click', () => {
 });
 
 /* ─────────────────────────────────────────────────────────
-   6. CHARACTER CREATOR (preserved from original)
+   6. CHARACTER CREATOR
    ───────────────────────────────────────────────────────── */
 const tabsEl    = document.getElementById('tabs');
 const optionsEl = document.getElementById('options');
@@ -456,12 +562,13 @@ document.getElementById('btn-download')?.addEventListener('click', async () => {
     link.href = canvas.toDataURL('image/png');
     link.click();
     if (skipped > 0) {
-      console.warn(`${skipped} layer dilewati karena gambar tidak terbaca.`);
+      console.warn(`${skipped} layers skipped.`);
     }
   } catch (err) {
     alert('Sorry, could not generate the PNG. Please try again.');
   }
 });
+
 /* ─────────────────────────────────────────────────────────
    7. HELPER: MINI CHARACTER PREVIEW
    ───────────────────────────────────────────────────────── */
@@ -505,14 +612,221 @@ const DIFFICULTY_LABEL = { beginner: 'Beginner Friendly', intermediate: 'Interme
 const DIFFICULTY_COLOR = { beginner: 'sage', intermediate: 'honey', advanced: 'pink' };
 
 /* ─────────────────────────────────────────────────────────
-   9. WORKSHOP LISTING
+   9. AUTHENTICATION PAGE
+   ───────────────────────────────────────────────────────── */
+function renderAuthPage() {
+  const authPage = document.getElementById('page-auth');
+  if (!authPage) return;
+
+  authPage.innerHTML = `
+    <div class="subpage-wrap">
+      <button class="btn btn-soft btn-back" data-nav="home"><span>←</span> Home</button>
+      <div class="auth-container">
+        <div class="auth-card">
+          <div class="auth-header">
+            <h2 class="auth-title">Welcome to CACTUS ✿</h2>
+            <p class="auth-subtitle">Sign in to join workshops and track your adventures!</p>
+          </div>
+
+          <div class="auth-tabs">
+            <button class="auth-tab active" data-auth-tab="login">Sign In</button>
+            <button class="auth-tab" data-auth-tab="signup">Create Account</button>
+          </div>
+
+          <form id="auth-form" class="auth-form" autocomplete="on">
+            <div class="form-group">
+              <label class="form-label">Email *</label>
+              <input class="form-input" name="email" type="email" placeholder="your@email.com" required autocomplete="email" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password *</label>
+              <input class="form-input" name="password" type="password" placeholder="Min 6 characters" required minlength="6" autocomplete="current-password" />
+            </div>
+            <div id="auth-extra-fields" style="display:none">
+              <div class="form-group">
+                <label class="form-label">Full Name</label>
+                <input class="form-input" name="full_name" type="text" placeholder="Your name" autocomplete="name" />
+              </div>
+            </div>
+            <p class="form-error-msg" id="auth-error" style="display:none"></p>
+            <button type="submit" class="btn btn-primary btn-lg auth-submit">Sign In ✦</button>
+          </form>
+
+          <div class="auth-divider">
+            <span>or continue with</span>
+          </div>
+
+          <button class="btn btn-soft btn-google" id="google-signin">
+            <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            Sign in with Google
+          </button>
+
+          <p class="auth-note">By signing in, you agree to our Terms of Service and Privacy Policy.</p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Add auth page styles if not already present
+  if (!document.getElementById('auth-styles')) {
+    const style = document.createElement('style');
+    style.id = 'auth-styles';
+    style.textContent = `
+      .auth-container { max-width: 440px; margin: 40px auto; }
+      .auth-card {
+        background: var(--ivory);
+        border: 1.5px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 32px 28px;
+        box-shadow: var(--sh);
+      }
+      .auth-header { text-align: center; margin-bottom: 24px; }
+      .auth-title { font-family: 'Fraunces', serif; font-size: 1.6rem; color: var(--ink); margin-bottom: 8px; }
+      .auth-subtitle { font-size: .9rem; color: var(--ink-soft); }
+      .auth-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+      .auth-tab {
+        flex: 1;
+        padding: 10px 16px;
+        border: 1.5px solid var(--border);
+        border-radius: var(--r-sm);
+        background: var(--paper);
+        color: var(--ink-soft);
+        font-weight: 700;
+        font-size: .9rem;
+        cursor: pointer;
+        transition: all .2s;
+      }
+      .auth-tab.active {
+        background: linear-gradient(135deg, var(--sage-l), var(--mint));
+        color: var(--ink);
+        border-color: var(--sage);
+      }
+      .auth-form { display: flex; flex-direction: column; gap: 16px; }
+      .auth-submit { margin-top: 8px; }
+      .auth-divider { text-align: center; margin: 20px 0; position: relative; }
+      .auth-divider::before, .auth-divider::after {
+        content: '';
+        position: absolute; top: 50%;
+        width: 40%; height: 1px;
+        background: var(--border);
+      }
+      .auth-divider::before { left: 0; }
+      .auth-divider::after { right: 0; }
+      .auth-divider span {
+        background: var(--ivory);
+        padding: 0 12px;
+        font-size: .8rem;
+        color: var(--ink-light);
+      }
+      .btn-google {
+        width: 100%;
+        justify-content: center;
+        gap: 10px;
+        font-size: .95rem;
+      }
+      .auth-note { font-size: .75rem; color: var(--ink-light); text-align: center; margin-top: 16px; }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // Tab switching
+  let isSignUp = false;
+  document.querySelectorAll('.auth-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      isSignUp = tab.dataset.authTab === 'signup';
+      document.getElementById('auth-extra-fields').style.display = isSignUp ? 'block' : 'none';
+      document.querySelector('.auth-submit').textContent = isSignUp ? 'Create Account ✦' : 'Sign In ✦';
+      // Update autocomplete attribute
+      document.querySelector('[name="email"]').setAttribute('autocomplete', isSignUp ? 'username' : 'email');
+      document.querySelector('[name="password"]').setAttribute('autocomplete', isSignUp ? 'new-password' : 'current-password');
+    });
+  });
+
+  // Form submission
+  document.getElementById('auth-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('.auth-submit');
+    const errEl = document.getElementById('auth-error');
+    errEl.style.display = 'none';
+    btn.disabled = true;
+    btn.textContent = 'Please wait...';
+
+    const fd = new FormData(e.target);
+    const email = fd.get('email')?.trim();
+    const password = fd.get('password');
+    const fullName = fd.get('full_name')?.trim() || '';
+
+    if (!email || !password) {
+      errEl.textContent = 'Please fill in email and password.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = isSignUp ? 'Create Account ✦' : 'Sign In ✦';
+      return;
+    }
+
+    try {
+      let result;
+      if (isSignUp) {
+        result = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { full_name: fullName },
+            emailRedirectTo: window.location.origin
+          }
+        });
+      } else {
+        result = await supabase.auth.signInWithPassword({ email, password });
+      }
+
+      if (result.error) throw result.error;
+
+      // Success - currentUser will be set by onAuthStateChange
+      currentUser = result.data.user;
+      await ensureProfile(currentUser);
+      updateNavForAuth();
+      navigateTo('dashboard');
+    } catch (err) {
+      console.error('[CACTUS] Auth error:', err);
+      errEl.textContent = friendlyError(err, 'Authentication failed. Please try again.');
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = isSignUp ? 'Create Account ✦' : 'Sign In ✦';
+    }
+  });
+
+  // Google sign-in
+  document.getElementById('google-signin')?.addEventListener('click', async () => {
+    const btn = document.getElementById('google-signin');
+    btn.disabled = true;
+    btn.innerHTML = 'Redirecting...';
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin }
+    });
+
+    if (error) {
+      console.error('[CACTUS] Google auth error:', error);
+      document.getElementById('auth-error').textContent = friendlyError(error, 'Google sign-in failed. Please try again.');
+      document.getElementById('auth-error').style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg> Sign in with Google`;
+    }
+  });
+}
+
+/* ─────────────────────────────────────────────────────────
+   10. WORKSHOP LISTING
    ───────────────────────────────────────────────────────── */
 async function loadWorkshops() {
   const grid = document.getElementById('workshops-grid');
   if (!grid) return;
-  grid.innerHTML = `<div class="workshops-loading"><span class="loading-spinner"></span><p>Finding cozy workshops for you…</p></div>`;
+  grid.innerHTML = `<div class="workshops-loading"><span class="loading-spinner"></span><p>Finding cozy workshops for you...</p></div>`;
 
-  const { data, error } = await supabase.from('workshops').select('*').order('date', { ascending: true });
+  const { data, error } = await supabase.from('workshops').select('*').eq('is_active', true).order('date', { ascending: true });
 
   if (error) {
     logSupabaseError('loadWorkshops', error);
@@ -544,10 +858,10 @@ function renderWorkshopCards(workshops, grid) {
       <div class="wcard-body">
         <div class="wcard-theme">${w.theme || ''}</div>
         <h3 class="wcard-title">${w.title}</h3>
-        <p class="wcard-desc">${(w.description || '').slice(0, 110)}…</p>
+        <p class="wcard-desc">${(w.description || '').slice(0, 110)}...</p>
         <div class="wcard-meta">
           <div class="wcard-meta-item">📅 <span>${formatDate(w.date)}</span></div>
-          <div class="wcard-meta-item">🕐 <span>${formatTime(w.time_start)} – ${formatTime(w.time_end)}</span></div>
+          <div class="wcard-meta-item">🕐 <span>${formatTime(w.time_start)} - ${formatTime(w.time_end)}</span></div>
           <div class="wcard-meta-item">📍 <span>${w.location || ''}</span></div>
           <div class="wcard-meta-item">👩‍🏫 <span>${w.instructor || ''}</span></div>
         </div>
@@ -566,23 +880,33 @@ function renderWorkshopCards(workshops, grid) {
     if (left > 0) {
       card.querySelector('.wcard-btn').addEventListener('click', e => {
         e.stopPropagation();
+        if (!currentUser) {
+          navigateTo('auth');
+          return;
+        }
         navigateTo('workshop-detail', { workshopId: w.id });
       });
     }
     card.addEventListener('click', () => {
-      if (left > 0) navigateTo('workshop-detail', { workshopId: w.id });
+      if (left > 0) {
+        if (!currentUser) {
+          navigateTo('auth');
+          return;
+        }
+        navigateTo('workshop-detail', { workshopId: w.id });
+      }
     });
     grid.appendChild(card);
   });
 }
 
 /* ─────────────────────────────────────────────────────────
-   10. WORKSHOP DETAIL
+   11. WORKSHOP DETAIL
    ───────────────────────────────────────────────────────── */
 async function loadWorkshopDetail(id) {
   const content = document.getElementById('detail-content');
   if (!content) return;
-  content.innerHTML = `<div class="workshops-loading"><span class="loading-spinner"></span><p>Loading workshop…</p></div>`;
+  content.innerHTML = `<div class="workshops-loading"><span class="loading-spinner"></span><p>Loading workshop...</p></div>`;
 
   document.getElementById('detail-back')?.addEventListener('click', () => navigateTo('workshops'), { once: true });
 
@@ -611,7 +935,7 @@ async function loadWorkshopDetail(id) {
         <h1 class="detail-title">${w.title}</h1>
         <div class="detail-meta-strip">
           <span>📅 ${formatDate(w.date)}</span>
-          <span>🕐 ${formatTime(w.time_start)} – ${formatTime(w.time_end)}</span>
+          <span>🕐 ${formatTime(w.time_start)} - ${formatTime(w.time_end)}</span>
           <span>📍 ${w.location || ''}</span>
           <span>👩‍🏫 ${w.instructor || ''}</span>
         </div>
@@ -684,14 +1008,25 @@ async function loadWorkshopDetail(id) {
 
   document.getElementById('detail-companion-char')?.appendChild(makeCharPreview(state, 'sm'));
   document.getElementById('detail-reg-btn')?.addEventListener('click', () => {
-    if (left > 0) navigateTo('register', { workshopId: w.id });
+    if (left > 0) {
+      if (!currentUser) {
+        navigateTo('auth');
+        return;
+      }
+      navigateTo('register', { workshopId: w.id });
+    }
   });
 }
 
 /* ─────────────────────────────────────────────────────────
-   11. MULTI-STEP REGISTRATION
+   12. MULTI-STEP REGISTRATION
    ───────────────────────────────────────────────────────── */
 function initRegistration(workshopId) {
+  if (!currentUser) {
+    navigateTo('auth');
+    return;
+  }
+
   regState.step = 1;
   regState.workshopId = workshopId;
 
@@ -741,7 +1076,7 @@ function renderRegStep(step) {
       <div class="reg-card">
         <div class="reg-card-tape"></div>
         <h3 class="reg-card-title">Tell us about yourself ✿</h3>
-        <p class="reg-card-sub">All fields marked * are required.</p>
+        <p class="reg-card-sub" style="margin-bottom:20px;">All fields marked * are required.</p>
         <form id="reg-form-1" class="reg-form" novalidate>
           <div class="form-row">
             <div class="form-group">
@@ -760,16 +1095,16 @@ function renderRegStep(step) {
             </div>
             <div class="form-group">
               <label class="form-label">Email *</label>
-              <input class="form-input" name="email" type="email" placeholder="your@email.com" value="${escHtml(fd.email)}" required />
+              <input class="form-input" name="email" type="email" placeholder="your@email.com" value="${escHtml(fd.email || currentUser?.email || '')}" required />
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">University / School *</label>
+              <label class="form-label">University / School / Alliance *</label>
               <input class="form-input" name="university" type="text" placeholder="Your institution" value="${escHtml(fd.university)}" required />
             </div>
             <div class="form-group">
-              <label class="form-label">Faculty / Major *</label>
+              <label class="form-label">Faculty / Major / Interest *</label>
               <input class="form-input" name="faculty" type="text" placeholder="e.g. Visual Communication Design" value="${escHtml(fd.faculty)}" required />
             </div>
           </div>
@@ -779,8 +1114,8 @@ function renderRegStep(step) {
               <input class="form-input" name="student_id" type="text" placeholder="Your student ID number" value="${escHtml(fd.student_id)}" />
             </div>
             <div class="form-group">
-              <label class="form-label">Emergency Contact *</label>
-              <input class="form-input" name="emergency_contact" type="text" placeholder="Name &amp; phone (e.g. Mama — 0812…)" value="${escHtml(fd.emergency_contact)}" required />
+              <label class="form-label">Emergency Contact <span class="form-opt">(optional)</span></label>
+              <input class="form-input" name="emergency_contact" type="text" placeholder="Name &amp; phone (e.g. Mama - 0812...)" value="${escHtml(fd.emergency_contact)}" />
             </div>
           </div>
           <div class="form-actions">
@@ -792,9 +1127,9 @@ function renderRegStep(step) {
     document.getElementById('reg-form-1')?.addEventListener('submit', e => {
       e.preventDefault();
       const fd = new FormData(e.target);
-      const required = ['full_name','phone','email','university','faculty','emergency_contact'];
+      const required = ['full_name','phone','email','university','faculty'];
       if (required.some(f => !fd.get(f)?.trim())) { showFormError(e.target,'Please fill in all required fields.'); return; }
-      required.concat(['nickname','student_id']).forEach(k => {
+      required.concat(['nickname','student_id','emergency_contact']).forEach(k => {
         regState.formData[k] = fd.get(k)?.trim() || '';
       });
       renderRegStep(2);
@@ -885,7 +1220,7 @@ function renderRegStep(step) {
                 <span class="rv-label">University</span><span class="rv-val">${escHtml(fd.university)}</span>
                 <span class="rv-label">Faculty</span><span class="rv-val">${escHtml(fd.faculty)}</span>
                 ${fd.student_id ? `<span class="rv-label">Student ID</span><span class="rv-val">${escHtml(fd.student_id)}</span>` : ''}
-                <span class="rv-label">Emergency</span><span class="rv-val">${escHtml(fd.emergency_contact)}</span>
+                ${fd.emergency_contact ? `<span class="rv-label">Emergency</span><span class="rv-val">${escHtml(fd.emergency_contact)}</span>` : ''}
               </div>
             </div>
             ${w ? `<div class="review-section">
@@ -893,7 +1228,7 @@ function renderRegStep(step) {
               <div class="review-grid">
                 <span class="rv-label">Workshop</span><span class="rv-val">${escHtml(w.title)}</span>
                 <span class="rv-label">Date</span><span class="rv-val">${formatDate(w.date)}</span>
-                <span class="rv-label">Time</span><span class="rv-val">${formatTime(w.time_start)} – ${formatTime(w.time_end)}</span>
+                <span class="rv-label">Time</span><span class="rv-val">${formatTime(w.time_start)} - ${formatTime(w.time_end)}</span>
                 <span class="rv-label">Location</span><span class="rv-val">${escHtml(w.location || '')}</span>
                 <span class="rv-label">Price</span><span class="rv-val">${formatPrice(w.price)}</span>
               </div>
@@ -930,7 +1265,14 @@ async function submitRegistration() {
   const btn   = document.getElementById('btn-submit-reg');
   const errEl = document.getElementById('reg-submit-error');
   if (errEl) errEl.style.display = 'none';
-  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+  if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
+
+  if (!currentUser) {
+    if (errEl) { errEl.textContent = 'Please sign in to register.'; errEl.style.display = 'block'; }
+    if (btn)   { btn.textContent = 'Confirm Registration ✦'; btn.disabled = false; }
+    navigateTo('auth');
+    return;
+  }
 
   if (!regState.workshopId) {
     if (errEl) { errEl.textContent = 'No workshop selected. Please go back and pick a workshop.'; errEl.style.display = 'block'; }
@@ -938,10 +1280,24 @@ async function submitRegistration() {
     return;
   }
 
+  // Get current seats_taken to calculate seat_number
+  const { data: workshopData, error: workshopError } = await supabase
+    .from('workshops')
+    .select('seats_taken')
+    .eq('id', regState.workshopId)
+    .maybeSingle();
+
+  if (workshopError || !workshopData) {
+    logSupabaseError('submitRegistration:getSeats', workshopError);
+    if (errEl) { errEl.textContent = 'Could not verify workshop capacity. Please try again.'; errEl.style.display = 'block'; }
+    if (btn)   { btn.textContent = 'Confirm Registration ✦'; btn.disabled = false; }
+    return;
+  }
+
+  const seatNum = (workshopData.seats_taken || 0) + 1;
   const year    = new Date().getFullYear();
   const randNum = String(Math.floor(Math.random() * 9000) + 1000);
   const regNum  = `CAC-${year}-${randNum}`;
-  const seatNum = (regState.workshop?.seats_taken || 0) + 1;
 
   const payload = {
     registration_number: regNum,
@@ -950,10 +1306,10 @@ async function submitRegistration() {
     nickname:            regState.formData.nickname          || null,
     phone:               regState.formData.phone,
     email:               regState.formData.email,
-    university:          regState.formData.university        || null,
-    faculty:             regState.formData.faculty           || null,
+    university:          regState.formData.university,
+    faculty:             regState.formData.faculty,
     student_id:          regState.formData.student_id        || null,
-    emergency_contact:   regState.formData.emergency_contact,
+    emergency_contact:   regState.formData.emergency_contact || null,
     special_notes:       regState.formData.special_notes     || null,
     dietary:             regState.formData.dietary           || null,
     accessibility:       regState.formData.accessibility     || null,
@@ -968,7 +1324,7 @@ async function submitRegistration() {
     insertResult = await supabase.from('registrations').insert(payload).select().maybeSingle();
   } catch (networkErr) {
     console.error('[CACTUS] Network/throw error while inserting registration:', networkErr);
-    if (errEl) { errEl.textContent = 'Could not reach Supabase. Check your internet connection and try again.'; errEl.style.display = 'block'; }
+    if (errEl) { errEl.textContent = 'Could not reach server. Check your internet connection and try again.'; errEl.style.display = 'block'; }
     if (btn)   { btn.textContent = 'Confirm Registration ✦'; btn.disabled = false; }
     return;
   }
@@ -985,11 +1341,6 @@ async function submitRegistration() {
     return;
   }
 
-  const { error: seatError } = await supabase.from('workshops').update({ seats_taken: seatNum }).eq('id', regState.workshopId);
-  logSupabaseError('submitRegistration:updateSeats', seatError);
-  // Note: we intentionally don't block navigation if only the seat-count
-  // update fails — the registration itself already succeeded.
-
   regState.registrationId     = data.id;
   regState.registrationNumber = data.registration_number;
   regState.seatNumber         = data.seat_number;
@@ -1005,9 +1356,14 @@ async function submitRegistration() {
 }
 
 /* ─────────────────────────────────────────────────────────
-   12. PAYMENT PAGE
+   13. PAYMENT PAGE
    ───────────────────────────────────────────────────────── */
 function renderPaymentPage() {
+  if (!currentUser) {
+    navigateTo('auth');
+    return;
+  }
+
   const content = document.getElementById('payment-content');
   if (!content) return;
   const w     = regState.workshop;
@@ -1017,7 +1373,7 @@ function renderPaymentPage() {
   content.innerHTML = `
     <div class="pay-header">
       <h2 class="subpage-title">Payment ✦</h2>
-      <p class="subpage-desc">You're almost there! Complete your payment to secure your spot.</p>
+      <p class="subpage-desc" style="margin-bottom:20px;">You're almost there! Complete your payment to secure your spot.</p>
       <div class="pay-reg-badge"><span>Registration No.</span><strong>${regState.registrationNumber || '—'}</strong></div>
     </div>
     <div class="pay-layout">
@@ -1164,7 +1520,7 @@ async function submitPayment({ method, proofDataUrl }) {
   const btn   = document.getElementById('btn-pay-submit');
   const errEl = document.getElementById('pay-submit-error');
   if (errEl) errEl.style.display = 'none';
-  if (btn) { btn.textContent = 'Submitting…'; btn.disabled = true; }
+  if (btn) { btn.textContent = 'Submitting...'; btn.disabled = true; }
 
   if (!regState.registrationId) {
     if (errEl) { errEl.textContent = 'Missing registration reference. Please register again.'; errEl.style.display = 'block'; }
@@ -1183,7 +1539,7 @@ async function submitPayment({ method, proofDataUrl }) {
     }));
   } catch (networkErr) {
     console.error('[CACTUS] Network/throw error while inserting payment:', networkErr);
-    if (errEl) { errEl.textContent = 'Could not reach Supabase. Check your internet connection and try again.'; errEl.style.display = 'block'; }
+    if (errEl) { errEl.textContent = 'Could not reach server. Check your internet connection and try again.'; errEl.style.display = 'block'; }
     if (btn)   { btn.textContent = 'Submit Payment ✦'; btn.disabled = false; }
     return;
   }
@@ -1198,12 +1554,16 @@ async function submitPayment({ method, proofDataUrl }) {
 }
 
 /* ─────────────────────────────────────────────────────────
-   13. CONFIRMATION / PARTICIPANT PASS
+   14. CONFIRMATION / PARTICIPANT PASS
+
+   IMPORTANT: Ticket access is controlled by payment status.
+   - Payment NOT verified (waiting/pending/no-payment): Ticket is LOCKED
+   - Payment verified: Ticket is UNLOCKED and can be viewed/downloaded
    ───────────────────────────────────────────────────────── */
 async function renderConfirmation(regId) {
   const content = document.getElementById('confirmation-content');
   if (!content) return;
-  content.innerHTML = `<div class="workshops-loading"><span class="loading-spinner"></span><p>Preparing your pass…</p></div>`;
+  content.innerHTML = `<div class="workshops-loading"><span class="loading-spinner"></span><p>Preparing your pass...</p></div>`;
 
   const { data: reg, error } = await supabase
     .from('registrations')
@@ -1213,43 +1573,80 @@ async function renderConfirmation(regId) {
 
   if (error || !reg) {
     logSupabaseError('renderConfirmation', error);
-    content.innerHTML = `<p class="error-msg">Could not load your confirmation. Try checking My Workshop.${error ? `<br><small>${escHtml(friendlyError(error, ''))}</small>` : ''}</p>`;
+    content.innerHTML = `<p class="error-msg">Could not load your confirmation.${error ? `<br><small>${escHtml(friendlyError(error, ''))}</small>` : ''}</p>`;
     return;
   }
 
-  const w = reg.workshops;
-  const qrPayload = JSON.stringify({
-    id:    reg.id,
-    num:   reg.registration_number,
-    name:  reg.full_name,
-    ws:    w?.id || '',
-    char:  reg.character_name || '',
-    seat:  reg.seat_number,
-  });
+  // Check for ticket (only exists if payment verified)
+  const { data: ticket } = await supabase
+    .from('tickets')
+    .select('*')
+    .eq('registration_id', regId)
+    .maybeSingle();
 
+  // Check for payment - payment status is the source of truth
+  const { data: payment } = await supabase
+    .from('payments')
+    .select('*')
+    .eq('registration_id', regId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const w = reg.workshops;
+  const paymentStatus = payment?.status || 'no-payment';
+
+  // PAYMENT STATUS = SINGLE SOURCE OF TRUTH FOR TICKET ACCESS
+  // Ticket is only accessible when payment status is "verified"
+  const isPaymentVerified = paymentStatus === 'verified';
+  const isTicketUnlocked = isPaymentVerified && ticket != null;
+
+  const statusLabel = {
+    waiting:    { label: '⏳ Payment Waiting',       cls: 'waiting'  },
+    verified:   { label: '✅ Payment Verified',      cls: 'verified'  },
+    rejected:   { label: '❌ Payment Rejected',      cls: 'rejected'  },
+    'no-payment':{ label: '📋 No Payment Yet',       cls: 'waiting'  },
+  };
+  const ps = statusLabel[paymentStatus] || statusLabel['no-payment'];
+
+  // QR Code - Only generate real QR if payment verified, otherwise show locked placeholder
   let qrDataUrl = '';
-  try {
-    qrDataUrl = await QRCode.toDataURL(qrPayload, {
-      width: 160, margin: 1,
-      color: { dark: '#5a3e2b', light: '#fdf8ef' },
+  if (isTicketUnlocked) {
+    const qrPayload = JSON.stringify({
+      id:    reg.id,
+      num:   reg.registration_number,
+      name:  reg.full_name,
+      ws:    w?.id || '',
+      char:  reg.character_name || '',
+      seat:  reg.seat_number,
+      ticket: ticket?.ticket_number || null,
     });
-  } catch { /* QR generation optional */ }
+    try {
+      qrDataUrl = await QRCode.toDataURL(qrPayload, {
+        width: 160, margin: 1,
+        color: { dark: '#5a3e2b', light: '#fdf8ef' },
+      });
+    } catch { /* QR generation optional */ }
+  }
 
   content.innerHTML = `
     <div class="conf-wrap">
       <div class="conf-celebration">
-        <h2 class="conf-title">You're registered! ✦</h2>
-        <p class="conf-subtitle">Your adventure begins now. See you at the workshop, ${escHtml(reg.full_name)}!</p>
+        <h2 class="conf-title">${isPaymentVerified ? 'Your Ticket is Ready! ✦' : 'You\'re registered! ✦'}</h2>
+        <p class="conf-subtitle">${isPaymentVerified
+          ? `See you at the workshop, ${escHtml(reg.full_name)}!`
+          : `Your adventure begins after payment verification, ${escHtml(reg.full_name)}!`}</p>
       </div>
 
-      <div class="ticket" id="conf-ticket">
+      <div class="ticket ${isTicketUnlocked ? '' : 'ticket-locked'}" id="conf-ticket">
         <div class="ticket-left">
-          <div class="ticket-char-frame">
+          <div class="ticket-char-frame ${isTicketUnlocked ? '' : 'locked'}">
             <div id="ticket-char"></div>
+            ${!isTicketUnlocked ? '<div class="ticket-lock-overlay"><span class="lock-icon">🔒</span></div>' : ''}
           </div>
           <div class="ticket-char-name">${escHtml(reg.character_name || 'My Character')}</div>
           <div class="ticket-org">CACTUS Workshop</div>
-          <div class="ticket-stamp">REGISTERED</div>
+          <div class="ticket-stamp ${isTicketUnlocked ? 'confirmed' : 'pending'}">${isTicketUnlocked ? 'CONFIRMED' : 'PENDING'}</div>
         </div>
 
         <div class="ticket-perforated-divider">
@@ -1263,20 +1660,21 @@ async function renderConfirmation(regId) {
           <div class="ticket-theme">${escHtml(w?.theme || '')}</div>
           <div class="ticket-detail-grid">
             <div class="ticket-detail"><span class="td-label">📅 Date</span><span class="td-val">${w ? formatDate(w.date) : '—'}</span></div>
-            <div class="ticket-detail"><span class="td-label">🕐 Time</span><span class="td-val">${w ? `${formatTime(w.time_start)} – ${formatTime(w.time_end)}` : '—'}</span></div>
+            <div class="ticket-detail"><span class="td-label">🕐 Time</span><span class="td-val">${w ? `${formatTime(w.time_start)} - ${formatTime(w.time_end)}` : '—'}</span></div>
             <div class="ticket-detail"><span class="td-label">📍 Location</span><span class="td-val">${escHtml(w?.location || '—')}</span></div>
             <div class="ticket-detail"><span class="td-label">👤 Participant</span><span class="td-val">${escHtml(reg.full_name)}</span></div>
             <div class="ticket-detail"><span class="td-label">💺 Seat</span><span class="td-val">#${String(reg.seat_number || 0).padStart(2,'0')}</span></div>
             <div class="ticket-detail"><span class="td-label">🎫 Reg. No.</span><span class="td-val ticket-reg-num">${escHtml(reg.registration_number)}</span></div>
+            ${isTicketUnlocked && ticket ? `<div class="ticket-detail"><span class="td-label">🎫 Ticket No.</span><span class="td-val">${escHtml(ticket.ticket_number)}</span></div>` : ''}
           </div>
           <div class="ticket-status-row">
-            <span class="ticket-status waiting">⏳ Awaiting Payment Verification</span>
+            <span class="ticket-status ${ps.cls}">${ps.label}</span>
           </div>
-          <div class="ticket-qr-wrap">
-            ${qrDataUrl
+          <div class="ticket-qr-wrap ${isTicketUnlocked ? '' : 'qr-locked'}">
+            ${isTicketUnlocked && qrDataUrl
               ? `<img class="ticket-qr" src="${qrDataUrl}" alt="QR Code" />`
-              : `<div class="ticket-qr-placeholder">QR</div>`}
-            <p class="ticket-qr-hint">Show this at check-in</p>
+              : `<div class="ticket-qr-placeholder"><span class="lock-icon">🔒</span><span>Payment Required</span></div>`}
+            <p class="ticket-qr-hint">${isTicketUnlocked ? 'Show this at check-in' : 'Complete payment to unlock'}</p>
           </div>
         </div>
         <div class="ticket-stickers">
@@ -1286,6 +1684,17 @@ async function renderConfirmation(regId) {
         </div>
       </div>
 
+      ${!isPaymentVerified ? `
+      <div class="conf-payment-reminder">
+        <p class="payment-warning-title">⚠️ Ticket is Locked</p>
+        <p>Your ticket will be available after payment is verified.</p>
+        <p class="payment-status-text">Current Status: <strong>${ps.label}</strong></p>
+        ${paymentStatus === 'no-payment' ? `<button class="btn btn-primary" id="btn-complete-payment">Complete Payment Now</button>` : ''}
+        ${paymentStatus === 'waiting' ? `<p class="payment-info">Our team is reviewing your payment. This usually takes 1×24 hours.</p>` : ''}
+        ${paymentStatus === 'rejected' ? `<p class="payment-info">Your payment was rejected. Please resubmit with correct proof.</p><button class="btn btn-primary" id="btn-resubmit-payment">Resubmit Payment</button>` : ''}
+      </div>
+      ` : ''}
+
       <div class="conf-actions">
         <button class="btn btn-primary btn-lg" id="btn-view-dashboard">Open My Workshop</button>
         <button class="btn btn-soft" id="btn-go-home" data-nav="home">Back to Home</button>
@@ -1294,60 +1703,192 @@ async function renderConfirmation(regId) {
       <div class="conf-next-steps">
         <h3>What happens next?</h3>
         <div class="next-steps-grid">
-          <div class="next-step-card"><span>1</span><p>Our team verifies your payment within 1×24 hours</p></div>
-          <div class="next-step-card"><span>2</span><p>You'll receive a confirmation email with your final ticket</p></div>
-          <div class="next-step-card"><span>3</span><p>Show your QR code at the workshop entrance on the big day!</p></div>
+          <div class="next-step-card"><span>1</span><p>${isPaymentVerified ? 'Your ticket is ready! Download or show it at check-in.' : 'Our team verifies your payment within 1×24 hours'}</p></div>
+          <div class="next-step-card"><span>2</span><p>${isPaymentVerified ? 'Bring your ID and ticket QR code' : 'You\'ll receive a confirmation when verified'}</p></div>
+          <div class="next-step-card"><span>3</span><p>${isPaymentVerified ? 'See you at the workshop!' : 'Your ticket will unlock automatically after verification'}</p></div>
         </div>
       </div>
     </div>
   `;
 
+  // Styles for locked ticket
+  if (!document.getElementById('locked-ticket-styles')) {
+    const style = document.createElement('style');
+    style.id = 'locked-ticket-styles';
+    style.textContent = `
+      .ticket-locked { opacity: 0.85; }
+      .ticket-locked .ticket-char-frame { position: relative; }
+      .ticket-locked .ticket-char-frame.locked { filter: grayscale(30%); }
+      .ticket-lock-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(255,255,255,0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--r-lg);
+      }
+      .lock-icon { font-size: 2.5rem; }
+      .ticket-stamp.pending {
+        background: var(--parchment);
+        color: var(--ink-soft);
+        border-color: var(--border);
+      }
+      .ticket-qr-wrap.qr-locked .ticket-qr-placeholder {
+        background: linear-gradient(135deg, var(--parchment-d), var(--parchment));
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        padding: 10px;
+      }
+      .ticket-qr-wrap.qr-locked .ticket-qr-placeholder .lock-icon { font-size: 1.5rem; }
+      .ticket-qr-wrap.qr-locked .ticket-qr-placeholder span:last-child { font-size: .65rem; }
+      .conf-payment-reminder {
+        text-align: center;
+        padding: 24px;
+        background: linear-gradient(135deg, rgba(240,192,96,.15), rgba(245,197,187,.1));
+        border: 2px solid rgba(240,192,96,.5);
+        border-radius: var(--r-lg);
+        margin-bottom: 24px;
+      }
+      .payment-warning-title { font-size: 1.1rem; font-weight: 700; color: var(--honey-d); margin-bottom: 12px; }
+      .payment-status-text { margin: 12px 0; font-size: .9rem; }
+      .payment-info { font-size: .85rem; color: var(--ink-soft); margin-top: 12px; }
+    `;
+    document.head.appendChild(style);
+  }
+
   document.getElementById('ticket-char')?.appendChild(makeCharPreview(reg.character_state || state, 'sm'));
   document.getElementById('btn-view-dashboard')?.addEventListener('click', () => navigateTo('dashboard'));
+
+  // Handle payment buttons
+  document.getElementById('btn-complete-payment')?.addEventListener('click', () => {
+    regState.registrationId = regId;
+    regState.workshopId = w?.id;
+    regState.workshop = w;
+    navigateTo('payment');
+  });
+
+  document.getElementById('btn-resubmit-payment')?.addEventListener('click', () => {
+    regState.registrationId = regId;
+    regState.workshopId = w?.id;
+    regState.workshop = w;
+    navigateTo('payment');
+  });
 }
 
 /* ─────────────────────────────────────────────────────────
-   14. DASHBOARD — My Workshop
+   15. DASHBOARD — My Workshop
+
+   IMPORTANT: Ticket buttons are disabled/hidden until payment verified.
+   Payment status is checked for each registration.
    ───────────────────────────────────────────────────────── */
 async function renderDashboard() {
   const content = document.getElementById('dashboard-content');
   if (!content) return;
-  const myRegs = getMyRegistrations();
 
-  if (!myRegs.length) {
+  if (!currentUser) {
     content.innerHTML = `
       <div class="dashboard-empty">
-        <div id="dash-empty-char"></div>
-        <h3>No workshops yet!</h3>
-        <p>Your character is ready — find an adventure to join.</p>
-        <a href="#" class="btn btn-primary btn-lg" data-nav="workshops">Browse Workshops ✦</a>
+        <h3>Please sign in to view your workshops</h3>
+        <p>Your registration history will appear here.</p>
+        <button class="btn btn-primary btn-lg" id="dash-signin">Sign In ✦</button>
       </div>
     `;
-    document.getElementById('dash-empty-char')?.appendChild(makeCharPreview(state, 'md'));
+    document.getElementById('dash-signin')?.addEventListener('click', () => navigateTo('auth'));
     return;
   }
 
-  content.innerHTML = `<div class="workshops-loading"><span class="loading-spinner"></span><p>Loading your diary…</p></div>`;
+  content.innerHTML = `<div class="workshops-loading"><span class="loading-spinner"></span><p>Loading your diary...</p></div>`;
 
-  const ids = myRegs.map(r => r.id);
+  // Fetch user's registrations
   const { data: regs, error } = await supabase
     .from('registrations')
     .select('*, workshops(*)')
-    .in('id', ids)
+    .eq('user_id', currentUser.id)
     .order('created_at', { ascending: false });
 
   if (error || !regs?.length) {
     logSupabaseError('renderDashboard', error);
-    content.innerHTML = `<p class="error-msg">Could not load your registrations.${error ? `<br><small>${escHtml(friendlyError(error, ''))}</small>` : ''}</p>`;
+    if (!regs?.length) {
+      content.innerHTML = `
+        <div class="dashboard-empty">
+          <div id="dash-empty-char"></div>
+          <h3>No workshops yet!</h3>
+          <p>Your character is ready - find an adventure to join.</p>
+          <a href="#" class="btn btn-primary btn-lg" data-nav="workshops">Browse Workshops ✦</a>
+        </div>
+      `;
+      document.getElementById('dash-empty-char')?.appendChild(makeCharPreview(state, 'md'));
+    } else {
+      content.innerHTML = `<p class="error-msg">Could not load your registrations.${error ? `<br><small>${escHtml(friendlyError(error, ''))}</small>` : ''}</p>`;
+    }
     return;
   }
 
-  const { data: payments, error: payErr } = await supabase.from('payments').select('*').in('registration_id', ids);
+  const regIds = regs.map(r => r.id);
+  const { data: payments, error: payErr } = await supabase.from('payments').select('*').in('registration_id', regIds);
   logSupabaseError('renderDashboard:payments', payErr);
+
+  const { data: tickets, error: tickErr } = await supabase.from('tickets').select('*').in('registration_id', regIds);
+  logSupabaseError('renderDashboard:tickets', tickErr);
+
+  const { data: completions, error: compErr } = await supabase.from('workshop_completions').select('*').in('registration_id', regIds);
+  logSupabaseError('renderDashboard:completions', compErr);
+
+  const { data: badges, error: badgeErr } = await supabase.from('badges').select('*').eq('user_id', currentUser.id);
+  logSupabaseError('renderDashboard:badges', badgeErr);
+
+  const { data: certificates, error: certErr } = await supabase.from('certificates').select('*').eq('user_id', currentUser.id);
+  logSupabaseError('renderDashboard:certificates', certErr);
+
   const payMap = {};
   (payments || []).forEach(p => { payMap[p.registration_id] = p; });
 
-  content.innerHTML = `<div class="dashboard-grid">${regs.map(reg => renderDashCard(reg, payMap[reg.id])).join('')}</div>`;
+  const ticketMap = {};
+  (tickets || []).forEach(t => { ticketMap[t.registration_id] = t; });
+
+  const completionMap = {};
+  (completions || []).forEach(c => { completionMap[c.registration_id] = c; });
+
+  const hasBadges = badges && badges.length > 0;
+  const hasCertificates = certificates && certificates.length > 0;
+
+  content.innerHTML = `
+    ${hasBadges ? `
+    <div class="dash-badges-section">
+      <h3 class="dash-section-title">Your Badges ✦</h3>
+      <div class="dash-badges-grid">
+        ${badges.map(b => `
+          <div class="dash-badge-card">
+            <div class="dash-badge-icon">🏆</div>
+            <div class="dash-badge-name">${escHtml(b.badge_name)}</div>
+            <div class="dash-badge-date">Earned ${formatDate(b.earned_at?.split('T')[0])}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    ` : ''}
+
+    ${hasCertificates ? `
+    <div class="dash-certificates-section">
+      <h3 class="dash-section-title">Your Certificates ✦</h3>
+      <div class="dash-certificates-grid">
+        ${certificates.map(c => `
+          <div class="dash-certificate-card">
+            <div class="dash-cert-icon">📜</div>
+            <div class="dash-cert-number">${escHtml(c.certificate_number)}</div>
+            <div class="dash-cert-date">Issued ${formatDate(c.issued_at?.split('T')[0])}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    ` : ''}
+
+    <h3 class="dash-section-title">Your Registrations ✿</h3>
+    <div class="dashboard-grid">${regs.map(reg => renderDashCard(reg, payMap[reg.id], ticketMap[reg.id], completionMap[reg.id])).join('')}</div>
+  `;
 
   regs.forEach(reg => {
     const el = document.getElementById(`dash-char-${reg.id}`);
@@ -1363,31 +1904,76 @@ async function renderDashboard() {
     setInterval(() => updateCountdown(el, target), 60000);
   });
 
+  // Only generate QR codes for verified payments
   regs.forEach(async reg => {
     const qrEl = document.getElementById(`dash-qr-${reg.id}`);
     if (!qrEl) return;
-    try {
-      const url = await QRCode.toDataURL(
-        JSON.stringify({ id: reg.id, num: reg.registration_number, name: reg.full_name }),
-        { width: 120, margin: 1, color: { dark: '#5a3e2b', light: '#fdf8ef' } }
-      );
-      qrEl.src = url;
-    } catch {}
+
+    const payment = payMap[reg.id];
+    const isVerified = payment?.status === 'verified';
+    const ticket = ticketMap[reg.id];
+
+    if (isVerified && ticket) {
+      try {
+        const url = await QRCode.toDataURL(
+          JSON.stringify({
+            id: reg.id,
+            num: reg.registration_number,
+            name: reg.full_name,
+            ticket: ticket?.ticket_number || null
+          }),
+          { width: 120, margin: 1, color: { dark: '#5a3e2b', light: '#fdf8ef' } }
+        );
+        qrEl.src = url;
+        qrEl.classList.remove('qr-locked');
+      } catch {}
+    } else {
+      // Show locked QR placeholder
+      qrEl.style.display = 'none';
+      const placeholder = qrEl.parentElement.querySelector('.dash-qr-locked');
+      if (placeholder) placeholder.style.display = 'flex';
+    }
   });
 
+  // View ticket button - only works for verified payments
   document.querySelectorAll('[data-view-ticket]').forEach(btn => {
     btn.addEventListener('click', () => {
-      regState.registrationId = btn.dataset.viewTicket;
-      navigateTo('confirmation', { registrationId: btn.dataset.viewTicket });
+      const regId = btn.dataset.viewTicket;
+      const payment = payMap[regId];
+
+      // Only allow viewing ticket if payment verified
+      if (payment?.status === 'verified') {
+        regState.registrationId = regId;
+        navigateTo('confirmation', { registrationId: regId });
+      }
+    });
+  });
+
+  // Complete payment button
+  document.querySelectorAll('[data-complete-payment]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const regId = btn.dataset.completePayment;
+      const reg = regs.find(r => r.id === regId);
+      if (reg) {
+        regState.registrationId = regId;
+        regState.workshopId = reg.workshop_id;
+        regState.workshop = reg.workshops;
+        navigateTo('payment');
+      }
     });
   });
 }
 
-function renderDashCard(reg, payment) {
+function renderDashCard(reg, payment, ticket, completion) {
   const w         = reg.workshops;
   const payStatus = payment?.status || 'no-payment';
   const regStatus = reg.status;
   const bring     = Array.isArray(w?.what_to_bring) ? w.what_to_bring : [];
+  const isCompleted = completion?.approved_at != null;
+
+  // PAYMENT STATUS = SOURCE OF TRUTH
+  const isPaymentVerified = payStatus === 'verified';
+  const canAccessTicket = isPaymentVerified && ticket != null;
 
   const statusLabel = {
     waiting:    { label: '⏳ Payment Waiting',       cls: 'status-waiting'  },
@@ -1405,7 +1991,9 @@ function renderDashCard(reg, payment) {
     <div class="dash-card">
       <div class="dash-card-tape" style="background:linear-gradient(90deg,${w?.color||'#c8dbc0'},transparent 80%)"></div>
       <div class="dash-card-top">
-        <div class="dash-char-preview" id="dash-char-${reg.id}"></div>
+        <div class="dash-char-preview ${canAccessTicket ? '' : 'locked-preview'}" id="dash-char-${reg.id}">
+          ${!canAccessTicket ? '<div class="char-lock-overlay"><span>🔒</span></div>' : ''}
+        </div>
         <div class="dash-card-info">
           <div class="dash-workshop-emoji">${w?.emoji || '✿'}</div>
           <h3 class="dash-workshop-name">${escHtml(w?.title || 'Workshop')}</h3>
@@ -1418,22 +2006,39 @@ function renderDashCard(reg, payment) {
         <span class="dash-status ${rs.cls}">${rs.label}</span>
         <span class="dash-status ${ps.cls}">${ps.label}</span>
       </div>
+      ${isCompleted ? `
+      <div class="dash-completion-badge">
+        <span>🏆</span> Workshop Completed!
+      </div>
+      ` : ''}
+      ${!isPaymentVerified ? `
+      <div class="dash-payment-warning">
+        <span>⚠️</span> Ticket locked until payment verified
+      </div>
+      ` : ''}
       ${w?.date ? `<div class="dash-countdown" id="countdown-${reg.id}">
         <span class="countdown-label">Workshop in</span>
-        <span class="countdown-val">…</span>
+        <span class="countdown-val">...</span>
       </div>` : ''}
       <div class="dash-reg-num">Reg. No: <strong>${escHtml(reg.registration_number)}</strong> · Seat #${String(reg.seat_number||0).padStart(2,'0')}</div>
+      ${canAccessTicket && ticket ? `<div class="dash-ticket-num">Ticket: <strong>${escHtml(ticket.ticket_number)}</strong></div>` : ''}
       ${bring.length ? `<div class="dash-checklist">
         <div class="dash-checklist-title">🎒 Things to bring</div>
         <ul class="dash-checklist-list">${bring.map(b=>`<li><label><input type="checkbox" /> <span>${escHtml(b)}</span></label></li>`).join('')}</ul>
       </div>` : ''}
       <div class="dash-qr-row">
         <div class="dash-qr-wrap">
-          <img id="dash-qr-${reg.id}" class="dash-qr" src="" alt="QR Code" />
-          <p class="dash-qr-hint">Show at check-in</p>
+          <img id="dash-qr-${reg.id}" class="dash-qr ${canAccessTicket ? '' : 'qr-locked'}" src="" alt="QR Code" style="${canAccessTicket ? '' : 'display:none'}" />
+          ${!canAccessTicket ? `<div class="dash-qr-locked" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:80px;height:80px;background:var(--parchment-d);border-radius:var(--r-xs);border:2px solid var(--border);justify-content:center"><span style="font-size:1.5rem">🔒</span><span style="font-size:.55rem;color:var(--ink-light)">Locked</span></div>` : ''}
+          <p class="dash-qr-hint">${canAccessTicket ? 'Show at check-in' : 'Unlock with payment'}</p>
         </div>
         <div class="dash-card-actions">
-          <button class="btn btn-primary" data-view-ticket="${reg.id}">View Ticket</button>
+          <button class="btn btn-primary ${canAccessTicket ? '' : 'btn-disabled'}"
+                  data-view-ticket="${reg.id}"
+                  ${canAccessTicket ? '' : 'disabled title="Complete payment to view ticket"'}>
+            ${canAccessTicket ? 'View Ticket' : 'Ticket Locked 🔒'}
+          </button>
+          ${(payStatus === 'no-payment' || payStatus === 'rejected') ? `<button class="btn btn-soft" data-complete-payment="${reg.id}">${payStatus === 'rejected' ? 'Resubmit Payment' : 'Complete Payment'}</button>` : ''}
         </div>
       </div>
     </div>
@@ -1451,15 +2056,79 @@ function updateCountdown(el, target) {
 }
 
 /* ─────────────────────────────────────────────────────────
-   15. SECURITY HELPER
+   16. ADD AUTH PAGE CONTAINER
    ───────────────────────────────────────────────────────── */
-function escHtml(str) {
-  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+const authPageEl = document.createElement('div');
+authPageEl.id = 'page-auth';
+authPageEl.className = 'page';
+document.body.appendChild(authPageEl);
+
+// Add dashboard and auth styles
+const dashStyles = document.createElement('style');
+dashStyles.textContent = `
+  .dash-badges-section, .dash-certificates-section { margin-bottom: 32px; }
+  .dash-section-title { font-family: 'Fraunces', serif; font-size: 1.3rem; color: var(--ink); margin-bottom: 16px; }
+  .dash-badges-grid, .dash-certificates-grid { display: flex; flex-wrap: wrap; gap: 12px; }
+  .dash-badge-card, .dash-certificate-card {
+    background: linear-gradient(135deg, var(--honey), var(--peach));
+    border-radius: var(--r-sm);
+    padding: 16px 20px;
+    text-align: center;
+    min-width: 140px;
+  }
+  .dash-badge-icon, .dash-cert-icon { font-size: 2rem; margin-bottom: 8px; }
+  .dash-badge-name, .dash-cert-number { font-weight: 700; color: var(--ink); font-size: .9rem; }
+  .dash-badge-date, .dash-cert-date { font-size: .75rem; color: var(--ink-soft); margin-top: 4px; }
+  .dash-completion-badge {
+    background: linear-gradient(135deg, var(--sage-l), var(--mint));
+    border-radius: var(--r-full);
+    padding: 8px 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    color: var(--sage-dk);
+    margin-bottom: 12px;
+  }
+  .dash-ticket-num { font-size: .8rem; color: var(--sage-d); margin-bottom: 8px; }
+  .char-lock-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--r-sm);
+  }
+  .locked-preview { position: relative; }
+  .dash-payment-warning {
+    background: rgba(240,192,96,.15);
+    border: 1px solid rgba(240,192,96,.4);
+    border-radius: var(--r-sm);
+    padding: 8px 14px;
+    font-size: .85rem;
+    color: var(--honey-d);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-disabled {
+    opacity: 0.5;
+    cursor: not-allowed !important;
+  }
+  .btn-disabled:hover {
+    transform: none !important;
+    box-shadow: inherit !important;
+  }
+  .dash-qr-locked span:last-child { color: var(--ink-light); }
+`;
+document.head.appendChild(dashStyles);
 
 /* ─────────────────────────────────────────────────────────
-   16. INITIALIZE
+   17. INITIALIZE
    ───────────────────────────────────────────────────────── */
-renderTabs();
-renderOptions();
-applyState();
+checkAuth().then(() => {
+  renderTabs();
+  renderOptions();
+  applyState();
+});

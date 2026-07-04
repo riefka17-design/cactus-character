@@ -1,0 +1,1908 @@
+/* =========================================================
+   CACTUS — Character You with Us
+   Vanilla JS + Supabase. With Authentication.
+   ========================================================= */
+
+'use strict';
+
+import { createClient } from '@supabase/supabase-js';
+import QRCode from 'qrcode';
+
+/* ── Supabase client ─────────────────────────────────────── */
+const SUPABASE_URL      = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.error(
+    '[CACTUS] Missing Supabase env vars. VITE_SUPABASE_URL:',
+    SUPABASE_URL, 'VITE_SUPABASE_ANON_KEY set:', !!SUPABASE_ANON_KEY
+  );
+}
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* Small helper so every Supabase error is visible in the console */
+function logSupabaseError(context, error) {
+  console.error(context, error);
+  console.log(JSON.stringify(error, null, 2));
+}
+
+function friendlyError(error, fallback) {
+  if (!error) return fallback;
+  if (error.code === '42501') {
+    return 'Permission denied by Supabase (Row Level Security). Ask the site owner to add an insert/select policy for this table.';
+  }
+  return error.message || error.details || fallback;
+}
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ─────────────────────────────────────────────────────────
+   AUTHENTICATION STATE
+   ───────────────────────────────────────────────────────── */
+let currentUser = null;
+let authReady = false;
+
+async function checkAuth() {
+  const { data: { session }, error } = await supabase.auth.getSession();
+  if (session?.user) {
+    currentUser = session.user;
+    await ensureProfile(currentUser);
+  }
+  authReady = true;
+  return currentUser;
+}
+
+async function ensureProfile(user) {
+  if (!user) return;
+  const { error } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (error || !error === false) {
+    // Try to create profile if it doesn't exist
+    await supabase.from('profiles').insert({
+      id: user.id,
+      display_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+    }).maybeSingle();
+  }
+}
+
+// Listen for auth changes
+supabase.auth.onAuthStateChange((event, session) => {
+  (async () => {
+    if (session?.user) {
+      currentUser = session.user;
+      await ensureProfile(currentUser);
+    } else {
+      currentUser = null;
+    }
+    updateNavForAuth();
+    if (authReady && currentPage !== 'auth') {
+      // Refresh current page data
+      if (currentPage === 'dashboard') renderDashboard();
+      if (currentPage === 'workshops') loadWorkshops();
+    }
+  })();
+});
+
+/* ─────────────────────────────────────────────────────────
+   1. CHARACTER CATEGORIES
+   ───────────────────────────────────────────────────────── */
+const CATEGORIES = [
+{ id: 'skin', label: 'Skin', folder: 'skin', options: [
+{ file: 'skin1.png', name: 'Porcelain' },
+{ file: 'skin2.png', name: 'Ivory' },
+{ file: 'skin3.png', name: 'Cream' },
+{ file: 'skin4.png', name: 'Tan' },
+{ file: 'skin5.png', name: 'Mocha' },
+{ file: 'skin6.png', name: 'Avatar' }
+]},
+{ id: 'naturalflush', label: 'Natural Flush', folder: 'naturalflush', options: [
+{ file: 'naturalflush1.png', name: 'Soft Pink' },
+{ file: 'naturalflush2.png', name: 'Rose Pink' },
+{ file: 'naturalflush3.png', name: 'Peach' },
+{ file: 'naturalflush4.png', name: 'Apricot' },
+{ file: 'naturalflush5.png', name: 'Coral' },
+{ file: 'naturalflush6.png', name: 'Soft Mauve' },
+{ file: 'naturalflush7.png', name: 'Terracotta' },
+{ file: 'naturalflush8.png', name: 'Warm Berry' },
+{ file: 'naturalflush9.png', name: 'Cocoa Rose' },
+{ file: 'naturalflush10.png', name: 'None' }
+]},
+{ id: 'hair', label: 'Hair', folder: 'hair', options: [
+{ file: 'hair1.png', name: 'Sakura Pink Short Bob' },
+{ file: 'hair2.png', name: 'Ice Blue Short Bob' },
+{ file: 'hair3.png', name: 'Brown Short Bob' },
+{ file: 'hair4.png', name: 'Cherry Red Short Bob' },
+{ file: 'hair5.png', name: 'Yellow Spiky Hair' },
+{ file: 'hair6.png', name: 'Gray Spiky Hair' },
+{ file: 'hair7.png', name: 'Blue Spiky Hair' },
+{ file: 'hair8.png', name: 'Red Spiky Hair' },
+{ file: 'hair9.png', name: 'Brown Classic Bun' },
+{ file: 'hair10.png', name: 'Pink Classic Bun' },
+{ file: 'hair11.png', name: 'Yellow Classic Bun' },
+{ file: 'hair12.png', name: 'None' }
+]},
+{ id: 'eyes', label: 'Eyes', folder: 'eyes', options: [
+{ file: 'eyes1.png', name: 'Innocent Cocoa' },
+{ file: 'eyes2.png', name: 'Gentle Purple' },
+{ file: 'eyes3.png', name: 'Gentle Brown' },
+{ file: 'eyes4.png', name: 'Gentle Blue' },
+{ file: 'eyes5.png', name: 'Gentle Emerald' },
+{ file: 'eyes6.png', name: 'Classic Amber' },
+{ file: 'eyes7.png', name: 'Classic Sea' },
+{ file: 'eyes8.png', name: 'Classic Violet' },
+{ file: 'eyes9.png', name: 'Doe Leaf' },
+{ file: 'eyes10.png', name: 'Doe Sky' },
+{ file: 'eyes11.png', name: 'Doe Brown' },
+{ file: 'eyes12.png', name: 'Doe Violet' },
+{ file: 'eyes13.png', name: 'Curious Teal' },
+{ file: 'eyes14.png', name: 'Curious Blue' },
+{ file: 'eyes15.png', name: 'Curious Purple' },
+{ file: 'eyes16.png', name: 'Soft Sky' },
+{ file: 'eyes17.png', name: 'Soft Emerald' },
+{ file: 'eyes18.png', name: 'Soft Wood' }
+]},
+{ id: 'eyebrows', label: 'Eyebrows', folder: 'eyebrows', options: [
+{ file: 'brows1.png', name: 'Soft Arch' },
+{ file: 'brows2.png', name: 'Gentle Arch' },
+{ file: 'brows3.png', name: 'Natural Arch' },
+{ file: 'brows4.png', name: 'Straight' },
+{ file: 'brows5.png', name: 'Relaxed' },
+{ file: 'brows6.png', name: 'Cute Curve' },
+{ file: 'brows7.png', name: 'None' }
+]},
+{ id: 'mouth', label: 'Mouth', folder: 'mouth', options: [
+{ file: 'mouth1.png', name: 'Smile' },
+{ file: 'mouth2.png', name: 'Frown' },
+{ file: 'mouth3.png', name: 'Ooh' },
+{ file: 'mouth4.png', name: 'Gasp' },
+{ file: 'mouth5.png', name: 'Pout' },
+{ file: 'mouth6.png', name: 'Grin' }
+]},
+{ id: 'blush', label: 'Blush', folder: 'blush', options: [
+{ file: 'blush1.png', name: 'Stripe Blush' },
+{ file: 'blush2.png', name: 'Cheek Blush' },
+{ file: 'blush3.png', name: 'Dot Blush' },
+{ file: 'blush4.png', name: 'Side Stripe Blush' },
+{ file: 'blush5.png', name: 'None' }
+]},
+{ id: 'hijab', label: 'Hijab', folder: 'hijab', options: [
+{ file: 'hijab1.png', name: 'None' }
+]},
+{ id: 'top', label: 'Top', folder: 'tops', options: [
+{ file: 'top1.png', name: 'Top 1' },
+{ file: 'top2.png', name: 'Top 2' },
+{ file: 'top5.png', name: 'None' }
+]},
+{ id: 'bottom', label: 'Bottom', folder: 'bottoms', options: [
+{ file: 'bottom1.png', name: 'Bottom 1' },
+{ file: 'bottom4.png', name: 'None' }
+]},
+{ id: 'dress', label: 'Dress', folder: 'dress', options: [
+{ file: 'dress1.png', name: 'Dress 1' },
+{ file: 'dress2.png', name: 'Dress 2' },
+{ file: 'dress3.png', name: 'Dress 3' },
+{ file: 'dress4.png', name: 'Dress 4' },
+{ file: 'dress5.png', name: 'None' }
+]},
+{ id: 'accessory', label: 'Accessories', folder: 'accessories', options: [
+{ file: 'acc1.png', name: 'Acc 1' },
+{ file: 'acc2.png', name: 'Acc 2' },
+{ file: 'acc3.png', name: 'Acc 3' },
+{ file: 'acc4.png', name: 'Acc 4' },
+{ file: 'acc5.png', name: 'None' }
+]},
+{ id: 'hobby', label: 'Hobby', folder: 'hobbies', options: [
+{ file: 'hobby1.png', name: 'Hobby 1' },
+{ file: 'hobby2.png', name: 'Hobby 2' },
+{ file: 'hobby3.png', name: 'Hobby 3' },
+{ file: 'hobby4.png', name: 'Hobby 4' },
+{ file: 'hobby5.png', name: 'None' }
+]},
+{ id: 'background', label: 'Background', folder: 'background', options: [
+{ file: 'bg1.png', name: 'Plain White' },
+{ file: 'bg2.png', name: 'Soft Blue' },
+{ file: 'bg3.png', name: 'Cream Beige' },
+{ file: 'bg4.png', name: 'Mint Green' },
+{ file: 'bg5.png', name: 'Sunny Meadow' },
+{ file: 'bg6.png', name: 'Cozy Room' },
+{ file: 'bg7.png', name: 'Minimal Interior' },
+{ file: 'bg8.png', name: 'Living Room' },
+{ file: 'bg9.png', name: 'Victorian Hall' },
+{ file: 'bg10.png', name: 'Carnival Night' },
+{ file: 'bg11.png', name: 'Hallowen Street' },
+{ file: 'bg12.png', name: 'Fireplace Lounge' },
+{ file: 'bg13.png', name: 'None' }
+]},
+];
+
+function findOption(cat, filename) {
+  return cat.options.find(o => o.file === filename) || null;
+}
+
+/* ─────────────────────────────────────────────────────────
+   2. CHARACTER STATE
+   ───────────────────────────────────────────────────────── */
+function defaultState() {
+  const s = {};
+  CATEGORIES.forEach(c => { s[c.id] = c.options[0].file; });
+  return s;
+}
+
+let state = (() => {
+  try {
+    const saved = localStorage.getItem('cactus-char');
+    return saved ? JSON.parse(saved) : defaultState();
+  } catch { return defaultState(); }
+})();
+
+function saveCharState() {
+  try { localStorage.setItem('cactus-char', JSON.stringify(state)); } catch {}
+}
+
+/* ─────────────────────────────────────────────────────────
+   3. REGISTRATION STATE
+   ───────────────────────────────────────────────────────── */
+const regState = {
+  workshopId:         null,
+  workshop:           null,
+  step:               1,
+  formData: {
+    full_name:         '',
+    nickname:          '',
+    phone:             '',
+    email:             '',
+    university:        '',
+    faculty:           '',
+    student_id:        '',
+    emergency_contact: '',  // Now optional
+    special_notes:     '',
+    dietary:           '',
+    accessibility:     '',
+    character_name:    '',
+  },
+  registrationId:     null,
+  registrationNumber: null,
+  seatNumber:         null,
+};
+
+function getMyRegistrations() {
+  try {
+    const saved = localStorage.getItem('cactus-my-regs');
+    return saved ? JSON.parse(saved) : [];
+  } catch { return []; }
+}
+
+function addMyRegistration(entry) {
+  try {
+    const list = getMyRegistrations();
+    if (!list.find(r => r.id === entry.id)) list.unshift(entry);
+    localStorage.setItem('cactus-my-regs', JSON.stringify(list));
+  } catch {}
+}
+
+/* ─────────────────────────────────────────────────────────
+   4. ROUTER
+   ───────────────────────────────────────────────────────── */
+const PAGE_IDS = ['main','workshops','workshop-detail','register','payment','confirmation','dashboard','auth'];
+let currentPage = 'main';
+
+function navigateTo(pageId, params = {}) {
+  PAGE_IDS.forEach(id => {
+    document.getElementById(`page-${id}`)?.classList.remove('active');
+  });
+  document.getElementById(`page-${pageId}`)?.classList.add('active');
+  currentPage = pageId;
+
+  document.querySelectorAll('.nav-link').forEach(a => {
+    a.classList.remove('nav-active');
+    const nav = a.dataset.nav;
+    if (pageId === 'main' && nav === 'home') a.classList.add('nav-active');
+    if (['workshops','workshop-detail','register','payment','confirmation'].includes(pageId) && nav === 'workshops') a.classList.add('nav-active');
+    if (pageId === 'dashboard' && nav === 'dashboard') a.classList.add('nav-active');
+  });
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  if (pageId === 'main' && params.scroll) {
+    setTimeout(() => {
+      document.getElementById(params.scroll)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
+  }
+
+  if (pageId === 'auth') renderAuthPage();
+  if (pageId === 'workshops') loadWorkshops();
+  if (pageId === 'dashboard') renderDashboard();
+  if (pageId === 'workshop-detail' && params.workshopId) loadWorkshopDetail(params.workshopId);
+  if (pageId === 'register' && params.workshopId) initRegistration(params.workshopId);
+  if (pageId === 'payment') renderPaymentPage();
+  if (pageId === 'confirmation' && params.registrationId) renderConfirmation(params.registrationId);
+}
+
+function requireAuth(redirectTo = 'auth') {
+  if (!currentUser) {
+    navigateTo(redirectTo);
+    return false;
+  }
+  return true;
+}
+
+/* ─────────────────────────────────────────────────────────
+   5. GLOBAL CLICK DELEGATION
+   ───────────────────────────────────────────────────────── */
+document.addEventListener('click', e => {
+  const trigger = e.target.closest('[data-nav]');
+  if (!trigger) return;
+  e.preventDefault();
+  const page   = trigger.dataset.nav;
+  const scroll = trigger.dataset.scroll || null;
+
+  // Check if auth is required
+  if ((page === 'register' || page === 'dashboard' || page === 'payment') && !currentUser) {
+    navigateTo('auth');
+    return;
+  }
+
+  if (page === 'home') {
+    navigateTo('main', scroll ? { scroll } : {});
+  } else {
+    navigateTo(page);
+  }
+});
+
+/* Mobile burger */
+document.getElementById('nav-burger')?.addEventListener('click', () => {
+  document.getElementById('nav-links')?.classList.toggle('nav-links-open');
+});
+document.getElementById('nav-links')?.addEventListener('click', () => {
+  document.getElementById('nav-links')?.classList.remove('nav-links-open');
+});
+
+/* ─────────────────────────────────────────────────────────
+   6. CHARACTER CREATOR
+   ───────────────────────────────────────────────────────── */
+const tabsEl    = document.getElementById('tabs');
+const optionsEl = document.getElementById('options');
+const previewEl = document.getElementById('preview');
+let activeCategory = CATEGORIES[0].id;
+
+function renderTabs() {
+  tabsEl.innerHTML = '';
+  CATEGORIES.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'tab' + (cat.id === activeCategory ? ' active' : '');
+    btn.textContent = cat.label;
+    btn.addEventListener('click', () => {
+      activeCategory = cat.id;
+      renderTabs();
+      renderOptions();
+    });
+    tabsEl.appendChild(btn);
+  });
+}
+
+function renderOptions() {
+  optionsEl.innerHTML = '';
+  const cat = CATEGORIES.find(c => c.id === activeCategory);
+
+  cat.options.forEach(opt => {
+    const div = document.createElement('div');
+    div.className = 'option' + (state[cat.id] === opt.file ? ' active' : '');
+    div.title = opt.name;
+    const img = document.createElement('img');
+    img.src = `/assets/${cat.folder}/${opt.file}`;
+    img.alt = opt.name;
+    div.appendChild(img);
+    const label = document.createElement('span');
+    label.className = 'opt-label';
+    label.textContent = opt.name;
+    div.appendChild(label);
+    div.addEventListener('click', () => {
+      state[cat.id] = opt.file;
+      updateLayer(cat.id, opt.file);
+      saveCharState();
+      renderOptions();
+    });
+    optionsEl.appendChild(div);
+  });
+}
+
+function updateLayer(layerId, filename) {
+  const cat = CATEGORIES.find(c => c.id === layerId);
+  const img = previewEl.querySelector(`[data-layer="${layerId}"]`);
+  if (!img || !cat) return;
+  const opt = findOption(cat, filename);
+  if (!filename || !opt) {
+    img.style.display = 'none';
+  } else {
+    img.style.display = '';
+    img.src = `/assets/${cat.folder}/${opt.file}`;
+  }
+}
+
+function applyState() {
+  CATEGORIES.forEach(cat => updateLayer(cat.id, state[cat.id]));
+}
+
+document.getElementById('btn-random')?.addEventListener('click', () => {
+  CATEGORIES.forEach(cat => {
+    const opt = cat.options[Math.floor(Math.random() * cat.options.length)];
+    state[cat.id] = opt.file;
+  });
+  applyState();
+  saveCharState();
+  renderOptions();
+});
+
+document.getElementById('btn-reset')?.addEventListener('click', () => {
+  state = defaultState();
+  applyState();
+  saveCharState();
+  renderOptions();
+});
+
+document.getElementById('btn-download')?.addEventListener('click', async () => {
+  const SIZE = 1024;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = SIZE;
+  const ctx = canvas.getContext('2d');
+  const layerEls = previewEl.querySelectorAll('.layer');
+  const order = [];
+  layerEls.forEach(el => {
+    const layerId = el.dataset.layer;
+    const cat = CATEGORIES.find(c => c.id === layerId);
+    if (!cat) return;
+    const filename = state[layerId];
+    if (!filename) return;
+    order.push({ src: `/assets/${cat.folder}/${filename}` });
+  });
+
+  function loadImg(src) {
+    return new Promise((resolve) => {
+      const im = new Image();
+      im.crossOrigin = 'anonymous';
+      im.onload  = () => resolve(im);
+      im.onerror = () => resolve(null);
+      im.src = src;
+    });
+  }
+
+  let skipped = 0;
+  for (const item of order) {
+    const im = await loadImg(item.src);
+    if (!im) { skipped++; continue; }
+    try {
+      ctx.drawImage(im, 0, 0, SIZE, SIZE);
+    } catch (drawErr) {
+      skipped++;
+    }
+  }
+
+  try {
+    const link = document.createElement('a');
+    link.download = 'my-cactus-character.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    if (skipped > 0) {
+      console.warn(`${skipped} layers skipped.`);
+    }
+  } catch (err) {
+    alert('Sorry, could not generate the PNG. Please try again.');
+  }
+});
+
+/* ─────────────────────────────────────────────────────────
+   7. HELPER: MINI CHARACTER PREVIEW
+   ───────────────────────────────────────────────────────── */
+function makeCharPreview(charState, size) {
+  const sizeClass = size || 'md';
+  const wrap = document.createElement('div');
+  wrap.className = `char-preview char-preview-${sizeClass}`;
+  CATEGORIES.forEach(cat => {
+    if (cat.id === 'background') return;
+    const val = charState?.[cat.id];
+    if (!val) return;
+    const img = document.createElement('img');
+    img.src       = `/assets/${cat.folder}/${val}`;
+    img.alt       = '';
+    img.className = 'char-preview-layer';
+    wrap.appendChild(img);
+  });
+  return wrap;
+}
+
+/* ─────────────────────────────────────────────────────────
+   8. UTILITY FORMATTERS
+   ───────────────────────────────────────────────────────── */
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+}
+function formatTime(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':');
+  const hr = parseInt(h, 10);
+  return `${hr > 12 ? hr - 12 : hr === 0 ? 12 : hr}:${m} ${hr >= 12 ? 'PM' : 'AM'}`;
+}
+function formatPrice(p) {
+  return `Rp ${Number(p || 0).toLocaleString('id-ID')}`;
+}
+function seatsLeft(w) { return (w.seats_total || 0) - (w.seats_taken || 0); }
+
+const DIFFICULTY_LABEL = { beginner: 'Beginner Friendly', intermediate: 'Intermediate', advanced: 'Advanced' };
+const DIFFICULTY_COLOR = { beginner: 'sage', intermediate: 'honey', advanced: 'pink' };
+
+/* ─────────────────────────────────────────────────────────
+   9. AUTHENTICATION
+   ───────────────────────────────────────────────────────── */
+function updateNavForAuth() {
+  const dashLink = document.querySelector('.nav-link-dash');
+  const regLink = document.querySelector('.nav-link-reg');
+
+  if (currentUser) {
+    if (dashLink) dashLink.style.display = '';
+    // Show logout option
+  } else {
+    if (dashLink) dashLink.style.display = 'none';
+  }
+}
+
+function renderAuthPage() {
+  const authPage = document.getElementById('page-auth');
+  if (!authPage) return;
+
+  authPage.innerHTML = `
+    <div class="subpage-wrap">
+      <button class="btn btn-soft btn-back" data-nav="home"><span>←</span> Home</button>
+      <div class="auth-container">
+        <div class="auth-card">
+          <div class="auth-header">
+            <h2 class="auth-title">Welcome to CACTUS ✿</h2>
+            <p class="auth-subtitle">Sign in to join workshops and track your adventures!</p>
+          </div>
+
+          <div class="auth-tabs">
+            <button class="auth-tab active" data-auth-tab="login">Sign In</button>
+            <button class="auth-tab" data-auth-tab="signup">Create Account</button>
+          </div>
+
+          <form id="auth-form" class="auth-form">
+            <div class="form-group">
+              <label class="form-label">Email *</label>
+              <input class="form-input" name="email" type="email" placeholder="your@email.com" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password *</label>
+              <input class="form-input" name="password" type="password" placeholder="Min 6 characters" required minlength="6" />
+            </div>
+            <div id="auth-extra-fields" style="display:none">
+              <div class="form-group">
+                <label class="form-label">Full Name</label>
+                <input class="form-input" name="full_name" type="text" placeholder="Your name" />
+              </div>
+            </div>
+            <p class="form-error-msg" id="auth-error" style="display:none"></p>
+            <button type="submit" class="btn btn-primary btn-lg auth-submit">Sign In ✦</button>
+          </form>
+
+          <div class="auth-divider">
+            <span>or continue with</span>
+          </div>
+
+          <button class="btn btn-soft btn-google" id="google-signin">
+            <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            Sign in with Google
+          </button>
+
+          <p class="auth-note">By signing in, you agree to our Terms of Service and Privacy Policy.</p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Add auth page styles
+  const style = document.createElement('style');
+  style.textContent = `
+    .auth-container { max-width: 440px; margin: 40px auto; }
+    .auth-card {
+      background: var(--ivory);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 32px 28px;
+      box-shadow: var(--sh);
+    }
+    .auth-header { text-align: center; margin-bottom: 24px; }
+    .auth-title { font-family: 'Fraunces', serif; font-size: 1.6rem; color: var(--ink); margin-bottom: 8px; }
+    .auth-subtitle { font-size: .9rem; color: var(--ink-soft); }
+    .auth-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+    .auth-tab {
+      flex: 1;
+      padding: 10px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-sm);
+      background: var(--paper);
+      color: var(--ink-soft);
+      font-weight: 700;
+      font-size: .9rem;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .auth-tab.active {
+      background: linear-gradient(135deg, var(--sage-l), var(--mint));
+      color: var(--ink);
+      border-color: var(--sage);
+    }
+    .auth-form { display: flex; flex-direction: column; gap: 16px; }
+    .auth-submit { margin-top: 8px; }
+    .auth-divider { text-align: center; margin: 20px 0; position: relative; }
+    .auth-divider::before, .auth-divider::after {
+      content: '';
+      position: absolute; top: 50%;
+      width: 40%; height: 1px;
+      background: var(--border);
+    }
+    .auth-divider::before { left: 0; }
+    .auth-divider::after { right: 0; }
+    .auth-divider span {
+      background: var(--ivory);
+      padding: 0 12px;
+      font-size: .8rem;
+      color: var(--ink-light);
+    }
+    .btn-google {
+      width: 100%;
+      justify-content: center;
+      gap: 10px;
+      font-size: .95rem;
+    }
+    .auth-note { font-size: .75rem; color: var(--ink-light); text-align: center; margin-top: 16px; }
+  `;
+  document.head.appendChild(style);
+
+  // Tab switching
+  let isSignUp = false;
+  document.querySelectorAll('.auth-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      isSignUp = tab.dataset.authTab === 'signup';
+      document.getElementById('auth-extra-fields').style.display = isSignUp ? 'block' : 'none';
+      document.querySelector('.auth-submit').textContent = isSignUp ? 'Create Account ✦' : 'Sign In ✦';
+    });
+  });
+
+  // Form submission
+  document.getElementById('auth-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('.auth-submit');
+    const errEl = document.getElementById('auth-error');
+    errEl.style.display = 'none';
+    btn.disabled = true;
+    btn.textContent = 'Please wait...';
+
+    const fd = new FormData(e.target);
+    const email = fd.get('email');
+    const password = fd.get('password');
+    const fullName = fd.get('full_name') || '';
+
+    try {
+      let result;
+      if (isSignUp) {
+        result = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { full_name: fullName } }
+        });
+      } else {
+        result = await supabase.auth.signInWithPassword({ email, password });
+      }
+
+      if (result.error) throw result.error;
+
+      // Success - redirect
+      currentUser = result.data.user;
+      navigateTo('dashboard');
+    } catch (err) {
+      errEl.textContent = err.message || 'Authentication failed. Please try again.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = isSignUp ? 'Create Account ✦' : 'Sign In ✦';
+    }
+  });
+
+  // Google sign-in
+  document.getElementById('google-signin')?.addEventListener('click', async () => {
+    const btn = document.getElementById('google-signin');
+    btn.disabled = true;
+    btn.textContent = 'Redirecting...';
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin }
+    });
+
+    if (error) {
+      document.getElementById('auth-error').textContent = error.message;
+      document.getElementById('auth-error').style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg> Sign in with Google`;
+    }
+  });
+}
+
+/* ─────────────────────────────────────────────────────────
+   10. WORKSHOP LISTING
+   ───────────────────────────────────────────────────────── */
+async function loadWorkshops() {
+  const grid = document.getElementById('workshops-grid');
+  if (!grid) return;
+  grid.innerHTML = `<div class="workshops-loading"><span class="loading-spinner"></span><p>Finding cozy workshops for you...</p></div>`;
+
+  const { data, error } = await supabase.from('workshops').select('*').eq('is_active', true).order('date', { ascending: true });
+
+  if (error) {
+    logSupabaseError('loadWorkshops', error);
+    grid.innerHTML = `<p class="error-msg">Could not load workshops.<br><small>${escHtml(friendlyError(error, 'Please try again later.'))}</small></p>`;
+    return;
+  }
+  renderWorkshopCards(data || [], grid);
+}
+
+function renderWorkshopCards(workshops, grid) {
+  grid.innerHTML = '';
+  if (!workshops.length) {
+    grid.innerHTML = '<p class="empty-msg">No workshops available right now. Check back soon!</p>';
+    return;
+  }
+  workshops.forEach(w => {
+    const left = seatsLeft(w);
+    const card = document.createElement('div');
+    card.className = 'workshop-card';
+    card.style.setProperty('--card-color', w.color || '#c8dbc0');
+    card.innerHTML = `
+      <div class="wcard-top">
+        <div class="wcard-emoji">${w.emoji || '✿'}</div>
+        <div class="wcard-badges">
+          <span class="badge badge-${DIFFICULTY_COLOR[w.difficulty] || 'sage'}">${DIFFICULTY_LABEL[w.difficulty] || w.difficulty}</span>
+          <span class="badge badge-price">${formatPrice(w.price)}</span>
+        </div>
+      </div>
+      <div class="wcard-body">
+        <div class="wcard-theme">${w.theme || ''}</div>
+        <h3 class="wcard-title">${w.title}</h3>
+        <p class="wcard-desc">${(w.description || '').slice(0, 110)}...</p>
+        <div class="wcard-meta">
+          <div class="wcard-meta-item">📅 <span>${formatDate(w.date)}</span></div>
+          <div class="wcard-meta-item">🕐 <span>${formatTime(w.time_start)} - ${formatTime(w.time_end)}</span></div>
+          <div class="wcard-meta-item">📍 <span>${w.location || ''}</span></div>
+          <div class="wcard-meta-item">👩‍🏫 <span>${w.instructor || ''}</span></div>
+        </div>
+        <div class="wcard-seats">
+          <div class="seats-bar"><div class="seats-fill" style="width:${Math.min(100, ((w.seats_taken || 0) / (w.seats_total || 1)) * 100)}%"></div></div>
+          <span class="seats-label">${left} seat${left !== 1 ? 's' : ''} left of ${w.seats_total}</span>
+        </div>
+        <div class="wcard-deadline">📋 Register by ${formatDate(w.deadline)}</div>
+      </div>
+      <div class="wcard-footer">
+        <button class="btn btn-primary wcard-btn" ${left === 0 ? 'disabled' : ''}>
+          ${left === 0 ? 'Fully Booked' : 'Join this Workshop ✦'}
+        </button>
+      </div>
+    `;
+    if (left > 0) {
+      card.querySelector('.wcard-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        if (!currentUser) {
+          navigateTo('auth');
+          return;
+        }
+        navigateTo('workshop-detail', { workshopId: w.id });
+      });
+    }
+    card.addEventListener('click', () => {
+      if (left > 0) {
+        if (!currentUser) {
+          navigateTo('auth');
+          return;
+        }
+        navigateTo('workshop-detail', { workshopId: w.id });
+      }
+    });
+    grid.appendChild(card);
+  });
+}
+
+/* ─────────────────────────────────────────────────────────
+   11. WORKSHOP DETAIL
+   ───────────────────────────────────────────────────────── */
+async function loadWorkshopDetail(id) {
+  const content = document.getElementById('detail-content');
+  if (!content) return;
+  content.innerHTML = `<div class="workshops-loading"><span class="loading-spinner"></span><p>Loading workshop...</p></div>`;
+
+  document.getElementById('detail-back')?.addEventListener('click', () => navigateTo('workshops'), { once: true });
+
+  const { data: w, error } = await supabase.from('workshops').select('*').eq('id', id).maybeSingle();
+  if (error || !w) {
+    logSupabaseError('loadWorkshopDetail', error);
+    content.innerHTML = `<p class="error-msg">Workshop not found.${error ? `<br><small>${escHtml(friendlyError(error, ''))}</small>` : ''}</p>`;
+    return;
+  }
+
+  regState.workshopId = w.id;
+  regState.workshop   = w;
+
+  const schedule = Array.isArray(w.schedule) ? w.schedule : [];
+  const faqs     = Array.isArray(w.faqs)     ? w.faqs     : [];
+  const materials = Array.isArray(w.materials_included) ? w.materials_included : [];
+  const bring     = Array.isArray(w.what_to_bring)      ? w.what_to_bring      : [];
+  const left      = seatsLeft(w);
+
+  content.innerHTML = `
+    <div class="detail-hero" style="--card-color:${w.color || '#c8dbc0'}">
+      <div class="detail-emoji-bg">${w.emoji || '✿'}</div>
+      <div class="detail-hero-content">
+        <span class="badge badge-${DIFFICULTY_COLOR[w.difficulty] || 'sage'}">${DIFFICULTY_LABEL[w.difficulty] || ''}</span>
+        <div class="detail-theme">${w.theme || ''}</div>
+        <h1 class="detail-title">${w.title}</h1>
+        <div class="detail-meta-strip">
+          <span>📅 ${formatDate(w.date)}</span>
+          <span>🕐 ${formatTime(w.time_start)} - ${formatTime(w.time_end)}</span>
+          <span>📍 ${w.location || ''}</span>
+          <span>👩‍🏫 ${w.instructor || ''}</span>
+        </div>
+        <div class="detail-price-row">
+          <span class="detail-price">${formatPrice(w.price)}</span>
+          <span class="detail-seats">${left} seat${left !== 1 ? 's' : ''} available</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-body">
+      <div class="detail-main">
+        <div class="detail-notebook-card">
+          <div class="detail-card-label">About this workshop</div>
+          <p>${w.description || ''}</p>
+        </div>
+        <div class="detail-notebook-card">
+          <div class="detail-card-label">What you'll make ✦</div>
+          <p class="detail-make">${w.what_youll_make || ''}</p>
+        </div>
+        <div class="detail-two-col">
+          <div class="detail-notebook-card">
+            <div class="detail-card-label">🎁 Materials included</div>
+            <ul class="detail-list">${materials.map(m => `<li>${m}</li>`).join('')}</ul>
+          </div>
+          <div class="detail-notebook-card">
+            <div class="detail-card-label">🎒 What to bring</div>
+            <ul class="detail-list">${bring.map(b => `<li>${b}</li>`).join('')}</ul>
+          </div>
+        </div>
+        ${schedule.length ? `
+        <div class="detail-notebook-card">
+          <div class="detail-card-label">🗓 Schedule</div>
+          <div class="schedule-timeline">
+            ${schedule.map(s => `<div class="schedule-item"><div class="schedule-time">${s.time}</div><div class="schedule-dot"></div><div class="schedule-activity">${s.activity}</div></div>`).join('')}
+          </div>
+        </div>` : ''}
+        ${faqs.length ? `
+        <div class="detail-notebook-card">
+          <div class="detail-card-label">💬 Frequently Asked Questions</div>
+          <div class="faq-list">
+            ${faqs.map(f => `<details class="faq-item"><summary class="faq-q">${f.q}</summary><p class="faq-a">${f.a}</p></details>`).join('')}
+          </div>
+        </div>` : ''}
+      </div>
+
+      <div class="detail-sidebar">
+        <div class="detail-register-card">
+          <div class="detail-register-emoji">${w.emoji || '✿'}</div>
+          <h3>${w.title}</h3>
+          <p class="detail-reg-date">📅 ${formatDate(w.date)}</p>
+          <p class="detail-reg-deadline">Register by ${formatDate(w.deadline)}</p>
+          <div class="seats-bar" style="margin:12px 0">
+            <div class="seats-fill" style="width:${Math.min(100,((w.seats_taken||0)/(w.seats_total||1))*100)}%"></div>
+          </div>
+          <p class="seats-label">${left} / ${w.seats_total} seats available</p>
+          <div class="detail-price-big">${formatPrice(w.price)}</div>
+          <button class="btn btn-primary btn-lg detail-reg-btn" id="detail-reg-btn" ${left===0?'disabled':''}>
+            ${left===0 ? 'Fully Booked' : 'Register Now ✦'}
+          </button>
+          <p class="detail-reg-sub">Your CACTUS character will come with you ✿</p>
+        </div>
+        <div class="detail-char-companion">
+          <p class="companion-label">Your companion</p>
+          <div id="detail-companion-char"></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('detail-companion-char')?.appendChild(makeCharPreview(state, 'sm'));
+  document.getElementById('detail-reg-btn')?.addEventListener('click', () => {
+    if (left > 0) {
+      if (!currentUser) {
+        navigateTo('auth');
+        return;
+      }
+      navigateTo('register', { workshopId: w.id });
+    }
+  });
+}
+
+/* ─────────────────────────────────────────────────────────
+   12. MULTI-STEP REGISTRATION
+   ───────────────────────────────────────────────────────── */
+function initRegistration(workshopId) {
+  regState.step = 1;
+  regState.workshopId = workshopId;
+
+  document.getElementById('reg-back')?.addEventListener('click', () => {
+    navigateTo('workshop-detail', { workshopId });
+  }, { once: true });
+
+  if (!regState.workshop || regState.workshop.id !== workshopId) {
+    supabase.from('workshops').select('*').eq('id', workshopId).maybeSingle().then(({ data, error }) => {
+      logSupabaseError('initRegistration', error);
+      regState.workshop = data;
+      renderRegStep(1);
+    });
+  } else {
+    renderRegStep(1);
+  }
+}
+
+function updateProgressUI(step) {
+  document.querySelectorAll('.reg-step').forEach(el => {
+    const s = parseInt(el.dataset.step, 10);
+    el.classList.toggle('active',    s === step);
+    el.classList.toggle('completed', s < step);
+  });
+}
+
+function showFormError(containerEl, msg) {
+  let err = containerEl.querySelector('.form-error-msg');
+  if (!err) {
+    err = document.createElement('p');
+    err.className = 'form-error-msg';
+    containerEl.appendChild(err);
+  }
+  err.textContent = msg;
+  err.style.display = 'block';
+}
+
+function renderRegStep(step) {
+  regState.step = step;
+  updateProgressUI(step);
+  const content = document.getElementById('reg-content');
+  if (!content) return;
+
+  if (step === 1) {
+    const fd = regState.formData;
+    content.innerHTML = `
+      <div class="reg-card">
+        <div class="reg-card-tape"></div>
+        <h3 class="reg-card-title">Tell us about yourself ✿</h3>
+        <p class="reg-card-sub" style="margin-bottom:20px;">Your ticket will show this information.</p>
+        <form id="reg-form-1" class="reg-form" novalidate>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Full Name *</label>
+              <input class="form-input" name="full_name" type="text" placeholder="Your full name" value="${escHtml(fd.full_name)}" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nickname <span class="form-opt">(optional)</span></label>
+              <input class="form-input" name="nickname" type="text" placeholder="What do friends call you?" value="${escHtml(fd.nickname)}" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Phone Number *</label>
+              <input class="form-input" name="phone" type="tel" placeholder="08xx-xxxx-xxxx" value="${escHtml(fd.phone)}" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email *</label>
+              <input class="form-input" name="email" type="email" placeholder="your@email.com" value="${escHtml(fd.email || currentUser?.email || '')}" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">University / School / Alliance *</label>
+              <input class="form-input" name="university" type="text" placeholder="Your institution" value="${escHtml(fd.university)}" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Faculty / Major / Interest *</label>
+              <input class="form-input" name="faculty" type="text" placeholder="e.g. Visual Communication Design" value="${escHtml(fd.faculty)}" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Student ID <span class="form-opt">(optional)</span></label>
+              <input class="form-input" name="student_id" type="text" placeholder="Your student ID number" value="${escHtml(fd.student_id)}" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Emergency Contact <span class="form-opt">(optional)</span></label>
+              <input class="form-input" name="emergency_contact" type="text" placeholder="Name &amp; phone (e.g. Mama - 0812...)" value="${escHtml(fd.emergency_contact)}" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-lg">Next: Your Character →</button>
+          </div>
+        </form>
+      </div>
+    `;
+    document.getElementById('reg-form-1')?.addEventListener('submit', e => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const required = ['full_name','phone','email','university','faculty'];
+      if (required.some(f => !fd.get(f)?.trim())) { showFormError(e.target,'Please fill in all required fields.'); return; }
+      required.concat(['nickname','student_id','emergency_contact']).forEach(k => {
+        regState.formData[k] = fd.get(k)?.trim() || '';
+      });
+      renderRegStep(2);
+    });
+  }
+
+  if (step === 2) {
+    const w  = regState.workshop;
+    const fd = regState.formData;
+    content.innerHTML = `
+      <div class="reg-step2-layout">
+        <div class="reg-card reg-char-card">
+          <div class="reg-card-tape" style="background:linear-gradient(90deg,var(--sage-l),var(--mint))"></div>
+          <h3 class="reg-card-title">Your CACTUS Character ✦</h3>
+          <p class="reg-card-sub">This character will be your identity at the workshop.</p>
+          <div class="reg-char-preview" id="reg-char-preview"></div>
+          <div class="form-group" style="margin-top:16px">
+            <label class="form-label">Character Name *</label>
+            <input class="form-input" id="char-name-input" type="text" placeholder="Give your character a name!" value="${escHtml(fd.character_name)}" maxlength="30" />
+            <p class="form-hint">This name will appear on your ticket.</p>
+          </div>
+          <a href="#" class="reg-edit-char" data-nav="home" data-scroll="create">✏️ Edit character first</a>
+        </div>
+        <div class="reg-card">
+          <div class="reg-card-tape" style="background:linear-gradient(90deg,var(--pink),var(--peach))"></div>
+          <h3 class="reg-card-title">Workshop Details ✿</h3>
+          ${w ? `<div class="reg-workshop-summary">
+            <span class="reg-ws-emoji">${w.emoji || '✿'}</span>
+            <div>
+              <div class="reg-ws-title">${w.title}</div>
+              <div class="reg-ws-date">📅 ${formatDate(w.date)}</div>
+              <div class="reg-ws-loc">📍 ${w.location || ''}</div>
+            </div>
+          </div>` : ''}
+          <form id="reg-form-2" class="reg-form" novalidate>
+            <div class="form-group">
+              <label class="form-label">Special Notes <span class="form-opt">(optional)</span></label>
+              <textarea class="form-input form-textarea" name="special_notes" placeholder="Anything we should know?">${escHtml(fd.special_notes)}</textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Dietary Restrictions <span class="form-opt">(optional)</span></label>
+              <input class="form-input" name="dietary" type="text" placeholder="e.g. vegetarian, no nuts" value="${escHtml(fd.dietary)}" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Accessibility Requests <span class="form-opt">(optional)</span></label>
+              <input class="form-input" name="accessibility" type="text" placeholder="e.g. wheelchair access" value="${escHtml(fd.accessibility)}" />
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-soft" id="step2-back">← Back</button>
+              <button type="submit" class="btn btn-primary btn-lg">Next: Review →</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+    document.getElementById('reg-char-preview')?.appendChild(makeCharPreview(state, 'md'));
+    document.getElementById('step2-back')?.addEventListener('click', () => renderRegStep(1));
+    document.getElementById('reg-form-2')?.addEventListener('submit', e => {
+      e.preventDefault();
+      const charName = document.getElementById('char-name-input')?.value.trim();
+      if (!charName) { showFormError(e.target,'Please give your character a name!'); return; }
+      const fd2 = new FormData(e.target);
+      regState.formData.character_name = charName;
+      regState.formData.special_notes  = fd2.get('special_notes')?.trim()  || '';
+      regState.formData.dietary        = fd2.get('dietary')?.trim()        || '';
+      regState.formData.accessibility  = fd2.get('accessibility')?.trim()  || '';
+      renderRegStep(3);
+    });
+  }
+
+  if (step === 3) {
+    const w  = regState.workshop;
+    const fd = regState.formData;
+    content.innerHTML = `
+      <div class="reg-review">
+        <div class="reg-card">
+          <div class="reg-card-tape" style="background:linear-gradient(90deg,var(--honey),var(--peach))"></div>
+          <h3 class="reg-card-title">Review your registration ✦</h3>
+          <p class="reg-card-sub">Everything look good? Confirm to proceed to payment.</p>
+          <div class="review-sections">
+            <div class="review-section">
+              <div class="review-section-title">Personal Info</div>
+              <div class="review-grid">
+                <span class="rv-label">Full Name</span><span class="rv-val">${escHtml(fd.full_name)}</span>
+                ${fd.nickname ? `<span class="rv-label">Nickname</span><span class="rv-val">${escHtml(fd.nickname)}</span>` : ''}
+                <span class="rv-label">Phone</span><span class="rv-val">${escHtml(fd.phone)}</span>
+                <span class="rv-label">Email</span><span class="rv-val">${escHtml(fd.email)}</span>
+                <span class="rv-label">University</span><span class="rv-val">${escHtml(fd.university)}</span>
+                <span class="rv-label">Faculty</span><span class="rv-val">${escHtml(fd.faculty)}</span>
+                ${fd.student_id ? `<span class="rv-label">Student ID</span><span class="rv-val">${escHtml(fd.student_id)}</span>` : ''}
+                ${fd.emergency_contact ? `<span class="rv-label">Emergency</span><span class="rv-val">${escHtml(fd.emergency_contact)}</span>` : ''}
+              </div>
+            </div>
+            ${w ? `<div class="review-section">
+              <div class="review-section-title">Workshop</div>
+              <div class="review-grid">
+                <span class="rv-label">Workshop</span><span class="rv-val">${escHtml(w.title)}</span>
+                <span class="rv-label">Date</span><span class="rv-val">${formatDate(w.date)}</span>
+                <span class="rv-label">Time</span><span class="rv-val">${formatTime(w.time_start)} - ${formatTime(w.time_end)}</span>
+                <span class="rv-label">Location</span><span class="rv-val">${escHtml(w.location || '')}</span>
+                <span class="rv-label">Price</span><span class="rv-val">${formatPrice(w.price)}</span>
+              </div>
+            </div>` : ''}
+            <div class="review-section review-char-section">
+              <div class="review-section-title">Your Character</div>
+              <div id="review-char-preview" class="review-char-row"></div>
+              <div class="review-char-name">${escHtml(fd.character_name)}</div>
+            </div>
+            ${fd.special_notes || fd.dietary || fd.accessibility ? `<div class="review-section">
+              <div class="review-section-title">Additional Notes</div>
+              <div class="review-grid">
+                ${fd.special_notes  ? `<span class="rv-label">Notes</span><span class="rv-val">${escHtml(fd.special_notes)}</span>` : ''}
+                ${fd.dietary        ? `<span class="rv-label">Dietary</span><span class="rv-val">${escHtml(fd.dietary)}</span>` : ''}
+                ${fd.accessibility  ? `<span class="rv-label">Accessibility</span><span class="rv-val">${escHtml(fd.accessibility)}</span>` : ''}
+              </div>
+            </div>` : ''}
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-soft" id="step3-back">← Edit</button>
+            <button class="btn btn-primary btn-lg" id="btn-submit-reg">Confirm Registration ✦</button>
+          </div>
+          <p class="form-error-msg" id="reg-submit-error" style="display:none"></p>
+        </div>
+      </div>
+    `;
+    document.getElementById('review-char-preview')?.appendChild(makeCharPreview(state, 'sm'));
+    document.getElementById('step3-back')?.addEventListener('click', () => renderRegStep(2));
+    document.getElementById('btn-submit-reg')?.addEventListener('click', submitRegistration);
+  }
+}
+
+async function submitRegistration() {
+  const btn   = document.getElementById('btn-submit-reg');
+  const errEl = document.getElementById('reg-submit-error');
+  if (errEl) errEl.style.display = 'none';
+  if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
+
+  if (!currentUser) {
+    if (errEl) { errEl.textContent = 'Please sign in to register.'; errEl.style.display = 'block'; }
+    if (btn)   { btn.textContent = 'Confirm Registration ✦'; btn.disabled = false; }
+    return;
+  }
+
+  if (!regState.workshopId) {
+    if (errEl) { errEl.textContent = 'No workshop selected. Please go back and pick a workshop.'; errEl.style.display = 'block'; }
+    if (btn)   { btn.textContent = 'Confirm Registration ✦'; btn.disabled = false; }
+    return;
+  }
+
+  // Get current seats_taken to calculate seat_number
+  const { data: workshopData, error: workshopError } = await supabase
+    .from('workshops')
+    .select('seats_taken')
+    .eq('id', regState.workshopId)
+    .maybeSingle();
+
+  if (workshopError || !workshopData) {
+    logSupabaseError('submitRegistration:getSeats', workshopError);
+    if (errEl) { errEl.textContent = 'Could not verify workshop capacity. Please try again.'; errEl.style.display = 'block'; }
+    if (btn)   { btn.textContent = 'Confirm Registration ✦'; btn.disabled = false; }
+    return;
+  }
+
+  const seatNum = (workshopData.seats_taken || 0) + 1;
+  const year    = new Date().getFullYear();
+  const randNum = String(Math.floor(Math.random() * 9000) + 1000);
+  const regNum  = `CAC-${year}-${randNum}`;
+
+  const payload = {
+    registration_number: regNum,
+    workshop_id:         regState.workshopId,
+    full_name:           regState.formData.full_name,
+    nickname:            regState.formData.nickname          || null,
+    phone:               regState.formData.phone,
+    email:               regState.formData.email,
+    university:          regState.formData.university,
+    faculty:             regState.formData.faculty,
+    student_id:          regState.formData.student_id        || null,
+    emergency_contact:   regState.formData.emergency_contact || null,
+    special_notes:       regState.formData.special_notes     || null,
+    dietary:             regState.formData.dietary           || null,
+    accessibility:       regState.formData.accessibility     || null,
+    character_name:      regState.formData.character_name,
+    character_state:     state,
+    status:              'pending',
+    seat_number:         seatNum,
+  };
+
+  let insertResult;
+  try {
+    insertResult = await supabase.from('registrations').insert(payload).select().maybeSingle();
+  } catch (networkErr) {
+    console.error('[CACTUS] Network/throw error while inserting registration:', networkErr);
+    if (errEl) { errEl.textContent = 'Could not reach server. Check your internet connection and try again.'; errEl.style.display = 'block'; }
+    if (btn)   { btn.textContent = 'Confirm Registration ✦'; btn.disabled = false; }
+    return;
+  }
+
+  const { data, error } = insertResult;
+
+  if (error || !data) {
+    logSupabaseError('submitRegistration', error);
+    if (errEl) {
+      errEl.textContent = friendlyError(error, 'Registration failed. Please try again.');
+      errEl.style.display = 'block';
+    }
+    if (btn)   { btn.textContent = 'Confirm Registration ✦'; btn.disabled = false; }
+    return;
+  }
+
+  regState.registrationId     = data.id;
+  regState.registrationNumber = data.registration_number;
+  regState.seatNumber         = data.seat_number;
+
+  addMyRegistration({
+    id:     data.id,
+    number: data.registration_number,
+    name:   regState.workshop?.title || 'Workshop',
+    date:   regState.workshop?.date  || '',
+  });
+
+  navigateTo('payment');
+}
+
+/* ─────────────────────────────────────────────────────────
+   13. PAYMENT PAGE
+   ───────────────────────────────────────────────────────── */
+function renderPaymentPage() {
+  const content = document.getElementById('payment-content');
+  if (!content) return;
+  const w     = regState.workshop;
+  const fd    = regState.formData;
+  const price = w?.price || 0;
+
+  content.innerHTML = `
+    <div class="pay-header">
+      <h2 class="subpage-title">Payment ✦</h2>
+      <p class="subpage-desc" style="margin-bottom:20px;">You're almost there! Complete your payment to secure your spot.</p>
+      <div class="pay-reg-badge"><span>Registration No.</span><strong>${regState.registrationNumber || '—'}</strong></div>
+    </div>
+    <div class="pay-layout">
+      <div class="pay-methods">
+        <div class="pay-card">
+          <div class="pay-card-tape"></div>
+          <h3 class="pay-card-title">Payment Methods</h3>
+          <div class="pay-method-tabs">
+            <button class="pay-tab active" data-method="bank">🏦 Bank Transfer</button>
+            <button class="pay-tab" data-method="qris">📱 QRIS</button>
+            <button class="pay-tab" data-method="ewallet">💚 E-Wallet</button>
+          </div>
+          <div id="pay-method-bank" class="pay-method-detail active">
+            <div class="pay-bank-card">
+              <div class="pay-bank-name">Bank Mandiri</div>
+              <div class="pay-account">1780005846429</div>
+              <div class="pay-account-name">a.n. Riefka Berliana Khoi</div>
+            </div>
+            <div class="pay-instructions">
+              <div class="pay-inst-title">Transfer Instructions</div>
+              <ol class="pay-inst-list">
+                <li>Open your banking app or go to an ATM</li>
+                <li>Transfer exactly <strong>${formatPrice(price)}</strong> to the account above</li>
+                <li>Use your name as transfer note: <strong>${escHtml(fd.full_name)}</strong></li>
+                <li>Save your transfer receipt / screenshot</li>
+                <li>Upload the proof below</li>
+              </ol>
+            </div>
+          </div>
+          <div id="pay-method-qris" class="pay-method-detail" style="display:none">
+            <div class="pay-qris-box">
+              <div class="pay-qris-image">
+              <img src="/assets/payment/qris.png" alt="QRIS Payment">
+              </div>
+              <p class="pay-qris-note"> Scan with any e-wallet or banking app </p>
+              <p class="pay-qris-amount">Amount: <strong>${formatPrice(price)}</strong></p>
+            </div>
+          </div>
+          <div id="pay-method-ewallet" class="pay-method-detail" style="display:none">
+            <div class="pay-ewallet-list">
+              <div class="pay-ewallet-item"><span class="ewallet-icon">💚</span><div><div class="ewallet-name">GoPay</div><div class="ewallet-num">0852-1914-417 (Riefka Berliana)</div></div></div>
+              <div class="pay-ewallet-item"><span class="ewallet-icon">🔵</span><div><div class="ewallet-name">OVO</div><div class="ewallet-num">0852-1914-4179 (Riefka Berliana)</div></div></div>
+              <div class="pay-ewallet-item"><span class="ewallet-icon">🟠</span><div><div class="ewallet-name">Dana</div><div class="ewallet-num">0852-1914-4179 (Riefka Berliana)</div></div></div>
+            </div>
+            <p class="pay-ewallet-note">Transfer exactly <strong>${formatPrice(price)}</strong> and include your name in the notes.</p>
+          </div>
+          <div class="pay-deadline">
+            <span>⏰</span>
+            <div>
+              <div class="pay-deadline-label">Payment Deadline</div>
+              <div class="pay-deadline-val">${w ? formatDate(w.deadline) : '—'}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pay-upload-col">
+        <div class="pay-card pay-upload-card">
+          <div class="pay-card-tape" style="background:linear-gradient(90deg,var(--pink),var(--peach))"></div>
+          <h3 class="pay-card-title">Upload Proof ✿</h3>
+          <p class="pay-card-sub">Attach your payment receipt like a sticker in your journal.</p>
+          <div class="pay-upload-box" id="pay-upload-box">
+            <input type="file" id="pay-file-input" accept="image/*" class="pay-file-hidden" />
+            <div class="pay-upload-prompt" id="pay-upload-prompt">
+              <div class="pay-upload-icon">📎</div>
+              <p>Click or drag your receipt here</p>
+              <span>JPG or PNG</span>
+              <button class="btn btn-soft" type="button" onclick="document.getElementById('pay-file-input').click()">Choose File</button>
+            </div>
+            <div class="pay-preview-wrap" id="pay-preview-wrap" style="display:none">
+              <img id="pay-preview-img" class="pay-preview-img" src="" alt="Payment proof" />
+              <button class="btn btn-soft pay-change-btn" type="button" onclick="document.getElementById('pay-file-input').click()">Change File</button>
+            </div>
+          </div>
+          <div class="pay-amount-display">
+            <span class="pay-amount-label">Amount to transfer</span>
+            <span class="pay-amount-val">${formatPrice(price)}</span>
+          </div>
+          <p class="form-error-msg" id="pay-submit-error" style="display:none"></p>
+          <button class="btn btn-primary btn-lg" id="btn-pay-submit">Submit Payment ✦</button>
+          <p class="pay-submit-note">Your ticket will be ready after verification (1×24 hours).</p>
+        </div>
+        <div class="pay-char-side">
+          <p class="companion-label">Your companion is waiting!</p>
+          <div id="pay-char-preview"></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('pay-char-preview')?.appendChild(makeCharPreview(state, 'sm'));
+
+  document.querySelectorAll('.pay-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.pay-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.pay-method-detail').forEach(d => { d.style.display = 'none'; d.classList.remove('active'); });
+      tab.classList.add('active');
+      const m = document.getElementById(`pay-method-${tab.dataset.method}`);
+      if (m) { m.style.display = ''; m.classList.add('active'); }
+    });
+  });
+
+  let proofDataUrl = null;
+  document.getElementById('pay-file-input')?.addEventListener('change', e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      proofDataUrl = ev.target.result;
+      document.getElementById('pay-upload-prompt').style.display = 'none';
+      document.getElementById('pay-preview-wrap').style.display  = 'block';
+      document.getElementById('pay-preview-img').src = proofDataUrl;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  const uploadBox = document.getElementById('pay-upload-box');
+  uploadBox?.addEventListener('dragover', e => { e.preventDefault(); uploadBox.classList.add('drag-over'); });
+  uploadBox?.addEventListener('dragleave', () => uploadBox.classList.remove('drag-over'));
+  uploadBox?.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadBox.classList.remove('drag-over');
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    const dt   = new DataTransfer();
+    dt.items.add(file);
+    const inp  = document.getElementById('pay-file-input');
+    inp.files  = dt.files;
+    inp.dispatchEvent(new Event('change'));
+  });
+
+  document.getElementById('btn-pay-submit')?.addEventListener('click', async () => {
+    const errEl  = document.getElementById('pay-submit-error');
+    if (!proofDataUrl) {
+      if (errEl) { errEl.textContent = 'Please upload your payment proof first.'; errEl.style.display = 'block'; }
+      return;
+    }
+    const method = document.querySelector('.pay-tab.active')?.dataset.method || 'bank';
+    await submitPayment({ method, proofDataUrl });
+  });
+}
+
+async function submitPayment({ method, proofDataUrl }) {
+  const btn   = document.getElementById('btn-pay-submit');
+  const errEl = document.getElementById('pay-submit-error');
+  if (errEl) errEl.style.display = 'none';
+  if (btn) { btn.textContent = 'Submitting...'; btn.disabled = true; }
+
+  if (!regState.registrationId) {
+    if (errEl) { errEl.textContent = 'Missing registration reference. Please register again.'; errEl.style.display = 'block'; }
+    if (btn)   { btn.textContent = 'Submit Payment ✦'; btn.disabled = false; }
+    return;
+  }
+
+  let error;
+  try {
+    ({ error } = await supabase.from('payments').insert({
+      registration_id: regState.registrationId,
+      method,
+      amount:          regState.workshop?.price || 0,
+      proof_data:      proofDataUrl,
+      status:          'waiting',
+    }));
+  } catch (networkErr) {
+    console.error('[CACTUS] Network/throw error while inserting payment:', networkErr);
+    if (errEl) { errEl.textContent = 'Could not reach server. Check your internet connection and try again.'; errEl.style.display = 'block'; }
+    if (btn)   { btn.textContent = 'Submit Payment ✦'; btn.disabled = false; }
+    return;
+  }
+
+  if (error) {
+    logSupabaseError('submitPayment', error);
+    if (errEl) { errEl.textContent = friendlyError(error, 'Could not submit payment. Please try again.'); errEl.style.display = 'block'; }
+    if (btn)   { btn.textContent = 'Submit Payment ✦'; btn.disabled = false; }
+    return;
+  }
+  navigateTo('confirmation', { registrationId: regState.registrationId });
+}
+
+/* ─────────────────────────────────────────────────────────
+   14. CONFIRMATION / PARTICIPANT PASS
+   ───────────────────────────────────────────────────────── */
+async function renderConfirmation(regId) {
+  const content = document.getElementById('confirmation-content');
+  if (!content) return;
+  content.innerHTML = `<div class="workshops-loading"><span class="loading-spinner"></span><p>Preparing your pass...</p></div>`;
+
+  const { data: reg, error } = await supabase
+    .from('registrations')
+    .select('*, workshops(*)')
+    .eq('id', regId)
+    .maybeSingle();
+
+  if (error || !reg) {
+    logSupabaseError('renderConfirmation', error);
+    content.innerHTML = `<p class="error-msg">Could not load your confirmation. Try checking My Workshop.${error ? `<br><small>${escHtml(friendlyError(error, ''))}</small>` : ''}</p>`;
+    return;
+  }
+
+  // Check for ticket
+  const { data: ticket } = await supabase
+    .from('tickets')
+    .select('*')
+    .eq('registration_id', regId)
+    .maybeSingle();
+
+  // Check for payment
+  const { data: payment } = await supabase
+    .from('payments')
+    .select('*')
+    .eq('registration_id', regId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const w = reg.workshops;
+  const paymentStatus = payment?.status || 'no-payment';
+
+  const qrPayload = JSON.stringify({
+    id:    reg.id,
+    num:   reg.registration_number,
+    name:  reg.full_name,
+    ws:    w?.id || '',
+    char:  reg.character_name || '',
+    seat:  reg.seat_number,
+    ticket: ticket?.ticket_number || null,
+  });
+
+  let qrDataUrl = '';
+  try {
+    qrDataUrl = await QRCode.toDataURL(qrPayload, {
+      width: 160, margin: 1,
+      color: { dark: '#5a3e2b', light: '#fdf8ef' },
+    });
+  } catch { /* QR generation optional */ }
+
+  const statusLabel = {
+    waiting:    { label: '⏳ Payment Waiting',       cls: 'waiting'  },
+    verified:   { label: '✅ Payment Verified',      cls: 'verified' },
+    rejected:   { label: '❌ Payment Rejected',      cls: 'rejected' },
+    'no-payment':{ label: '📋 No Payment Yet',       cls: 'waiting'  },
+  };
+  const ps = statusLabel[paymentStatus] || statusLabel['no-payment'];
+
+  content.innerHTML = `
+    <div class="conf-wrap">
+      <div class="conf-celebration">
+        <h2 class="conf-title">You're registered! ✦</h2>
+        <p class="conf-subtitle">Your adventure begins now. See you at the workshop, ${escHtml(reg.full_name)}!</p>
+      </div>
+
+      <div class="ticket" id="conf-ticket">
+        <div class="ticket-left">
+          <div class="ticket-char-frame">
+            <div id="ticket-char"></div>
+          </div>
+          <div class="ticket-char-name">${escHtml(reg.character_name || 'My Character')}</div>
+          <div class="ticket-org">CACTUS Workshop</div>
+          <div class="ticket-stamp">${ticket ? 'CONFIRMED' : 'PENDING'}</div>
+        </div>
+
+        <div class="ticket-perforated-divider">
+          <div class="ticket-circle top"></div>
+          <div class="ticket-dashes"></div>
+          <div class="ticket-circle bottom"></div>
+        </div>
+
+        <div class="ticket-right">
+          <div class="ticket-event-name">${escHtml(w?.title || 'Workshop')}</div>
+          <div class="ticket-theme">${escHtml(w?.theme || '')}</div>
+          <div class="ticket-detail-grid">
+            <div class="ticket-detail"><span class="td-label">📅 Date</span><span class="td-val">${w ? formatDate(w.date) : '—'}</span></div>
+            <div class="ticket-detail"><span class="td-label">🕐 Time</span><span class="td-val">${w ? `${formatTime(w.time_start)} - ${formatTime(w.time_end)}` : '—'}</span></div>
+            <div class="ticket-detail"><span class="td-label">📍 Location</span><span class="td-val">${escHtml(w?.location || '—')}</span></div>
+            <div class="ticket-detail"><span class="td-label">👤 Participant</span><span class="td-val">${escHtml(reg.full_name)}</span></div>
+            <div class="ticket-detail"><span class="td-label">💺 Seat</span><span class="td-val">#${String(reg.seat_number || 0).padStart(2,'0')}</span></div>
+            <div class="ticket-detail"><span class="td-label">🎫 Reg. No.</span><span class="td-val ticket-reg-num">${escHtml(reg.registration_number)}</span></div>
+            ${ticket ? `<div class="ticket-detail"><span class="td-label">🎫 Ticket No.</span><span class="td-val">${escHtml(ticket.ticket_number)}</span></div>` : ''}
+          </div>
+          <div class="ticket-status-row">
+            <span class="ticket-status ${ps.cls}">${ps.label}</span>
+          </div>
+          <div class="ticket-qr-wrap">
+            ${qrDataUrl
+              ? `<img class="ticket-qr" src="${qrDataUrl}" alt="QR Code" />`
+              : `<div class="ticket-qr-placeholder">QR</div>`}
+            <p class="ticket-qr-hint">Show this at check-in</p>
+          </div>
+        </div>
+        <div class="ticket-stickers">
+          <span class="ticket-sticker ts-1">✿</span>
+          <span class="ticket-sticker ts-2">✦</span>
+          <span class="ticket-sticker ts-3">❤</span>
+        </div>
+      </div>
+
+      ${paymentStatus === 'waiting' || paymentStatus === 'no-payment' ? `
+      <div class="conf-payment-reminder">
+        <p>Your payment is being verified. Check back later or visit My Workshop for updates.</p>
+        ${paymentStatus === 'no-payment' ? `<button class="btn btn-primary" id="btn-complete-payment">Complete Payment</button>` : ''}
+      </div>
+      ` : ''}
+
+      <div class="conf-actions">
+        <button class="btn btn-primary btn-lg" id="btn-view-dashboard">Open My Workshop</button>
+        <button class="btn btn-soft" id="btn-go-home" data-nav="home">Back to Home</button>
+      </div>
+
+      <div class="conf-next-steps">
+        <h3>What happens next?</h3>
+        <div class="next-steps-grid">
+          <div class="next-step-card"><span>1</span><p>Our team verifies your payment within 1×24 hours</p></div>
+          <div class="next-step-card"><span>2</span><p>You'll receive a confirmation email with your final ticket</p></div>
+          <div class="next-step-card"><span>3</span><p>Show your QR code at the workshop entrance on the big day!</p></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('ticket-char')?.appendChild(makeCharPreview(reg.character_state || state, 'sm'));
+  document.getElementById('btn-view-dashboard')?.addEventListener('click', () => navigateTo('dashboard'));
+  document.getElementById('btn-complete-payment')?.addEventListener('click', () => {
+    regState.registrationId = regId;
+    regState.workshopId = w?.id;
+    regState.workshop = w;
+    navigateTo('payment');
+  });
+}
+
+/* ─────────────────────────────────────────────────────────
+   15. DASHBOARD — My Workshop
+   ───────────────────────────────────────────────────────── */
+async function renderDashboard() {
+  const content = document.getElementById('dashboard-content');
+  if (!content) return;
+
+  if (!currentUser) {
+    content.innerHTML = `
+      <div class="dashboard-empty">
+        <h3>Please sign in to view your workshops</h3>
+        <p>Your registration history will appear here.</p>
+        <button class="btn btn-primary btn-lg" id="dash-signin">Sign In ✦</button>
+      </div>
+    `;
+    document.getElementById('dash-signin')?.addEventListener('click', () => navigateTo('auth'));
+    return;
+  }
+
+  content.innerHTML = `<div class="workshops-loading"><span class="loading-spinner"></span><p>Loading your diary...</p></div>`;
+
+  // Fetch user's registrations
+  const { data: regs, error } = await supabase
+    .from('registrations')
+    .select('*, workshops(*)')
+    .eq('user_id', currentUser.id)
+    .order('created_at', { ascending: false });
+
+  if (error || !regs?.length) {
+    logSupabaseError('renderDashboard', error);
+    if (!regs?.length) {
+      content.innerHTML = `
+        <div class="dashboard-empty">
+          <div id="dash-empty-char"></div>
+          <h3>No workshops yet!</h3>
+          <p>Your character is ready - find an adventure to join.</p>
+          <a href="#" class="btn btn-primary btn-lg" data-nav="workshops">Browse Workshops ✦</a>
+        </div>
+      `;
+      document.getElementById('dash-empty-char')?.appendChild(makeCharPreview(state, 'md'));
+    } else {
+      content.innerHTML = `<p class="error-msg">Could not load your registrations.${error ? `<br><small>${escHtml(friendlyError(error, ''))}</small>` : ''}</p>`;
+    }
+    return;
+  }
+
+  const regIds = regs.map(r => r.id);
+  const { data: payments, error: payErr } = await supabase.from('payments').select('*').in('registration_id', regIds);
+  logSupabaseError('renderDashboard:payments', payErr);
+
+  const { data: tickets, error: tickErr } = await supabase.from('tickets').select('*').in('registration_id', regIds);
+  logSupabaseError('renderDashboard:tickets', tickErr);
+
+  const { data: completions, error: compErr } = await supabase.from('workshop_completions').select('*').in('registration_id', regIds);
+  logSupabaseError('renderDashboard:completions', compErr);
+
+  const { data: badges, error: badgeErr } = await supabase.from('badges').select('*').eq('user_id', currentUser.id);
+  logSupabaseError('renderDashboard:badges', badgeErr);
+
+  const { data: certificates, error: certErr } = await supabase.from('certificates').select('*').eq('user_id', currentUser.id);
+  logSupabaseError('renderDashboard:certificates', certErr);
+
+  const payMap = {};
+  (payments || []).forEach(p => { payMap[p.registration_id] = p; });
+
+  const ticketMap = {};
+  (tickets || []).forEach(t => { ticketMap[t.registration_id] = t; });
+
+  const completionMap = {};
+  (completions || []).forEach(c => { completionMap[c.registration_id] = c; });
+
+  // Add badges section if any
+  const hasBadges = badges && badges.length > 0;
+  const hasCertificates = certificates && certificates.length > 0;
+
+  content.innerHTML = `
+    ${hasBadges ? `
+    <div class="dash-badges-section">
+      <h3 class="dash-section-title">Your Badges ✦</h3>
+      <div class="dash-badges-grid">
+        ${badges.map(b => `
+          <div class="dash-badge-card">
+            <div class="dash-badge-icon">🏆</div>
+            <div class="dash-badge-name">${escHtml(b.badge_name)}</div>
+            <div class="dash-badge-date">Earned ${formatDate(b.earned_at?.split('T')[0])}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    ` : ''}
+
+    ${hasCertificates ? `
+    <div class="dash-certificates-section">
+      <h3 class="dash-section-title">Your Certificates ✦</h3>
+      <div class="dash-certificates-grid">
+        ${certificates.map(c => `
+          <div class="dash-certificate-card">
+            <div class="dash-cert-icon">📜</div>
+            <div class="dash-cert-number">${escHtml(c.certificate_number)}</div>
+            <div class="dash-cert-date">Issued ${formatDate(c.issued_at?.split('T')[0])}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    ` : ''}
+
+    <h3 class="dash-section-title">Your Registrations ✿</h3>
+    <div class="dashboard-grid">${regs.map(reg => renderDashCard(reg, payMap[reg.id], ticketMap[reg.id], completionMap[reg.id])).join('')}</div>
+  `;
+
+  regs.forEach(reg => {
+    const el = document.getElementById(`dash-char-${reg.id}`);
+    if (el) el.appendChild(makeCharPreview(reg.character_state || state, 'sm'));
+  });
+
+  regs.forEach(reg => {
+    if (!reg.workshops?.date) return;
+    const el = document.getElementById(`countdown-${reg.id}`);
+    if (!el) return;
+    const target = new Date(`${reg.workshops.date}T${reg.workshops.time_start || '08:00'}:00`);
+    updateCountdown(el, target);
+    setInterval(() => updateCountdown(el, target), 60000);
+  });
+
+  regs.forEach(async reg => {
+    const qrEl = document.getElementById(`dash-qr-${reg.id}`);
+    if (!qrEl) return;
+    const ticket = ticketMap[reg.id];
+    try {
+      const url = await QRCode.toDataURL(
+        JSON.stringify({
+          id: reg.id,
+          num: reg.registration_number,
+          name: reg.full_name,
+          ticket: ticket?.ticket_number || null
+        }),
+        { width: 120, margin: 1, color: { dark: '#5a3e2b', light: '#fdf8ef' } }
+      );
+      qrEl.src = url;
+    } catch {}
+  });
+
+  document.querySelectorAll('[data-view-ticket]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      regState.registrationId = btn.dataset.viewTicket;
+      navigateTo('confirmation', { registrationId: btn.dataset.viewTicket });
+    });
+  });
+
+  document.querySelectorAll('[data-complete-payment]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const regId = btn.dataset.completePayment;
+      const reg = regs.find(r => r.id === regId);
+      if (reg) {
+        regState.registrationId = regId;
+        regState.workshopId = reg.workshop_id;
+        regState.workshop = reg.workshops;
+        navigateTo('payment');
+      }
+    });
+  });
+}
+
+function renderDashCard(reg, payment, ticket, completion) {
+  const w         = reg.workshops;
+  const payStatus = payment?.status || 'no-payment';
+  const regStatus = reg.status;
+  const bring     = Array.isArray(w?.what_to_bring) ? w.what_to_bring : [];
+  const isCompleted = completion?.approved_at != null;
+
+  const statusLabel = {
+    waiting:    { label: '⏳ Payment Waiting',       cls: 'status-waiting'  },
+    verified:   { label: '✅ Payment Verified',      cls: 'status-verified' },
+    rejected:   { label: '❌ Payment Rejected',      cls: 'status-rejected' },
+    'no-payment':{ label: '📋 No Payment Yet',       cls: 'status-pending'  },
+    pending:    { label: '🔄 Pending Confirmation',  cls: 'status-pending'  },
+    confirmed:  { label: '✅ Confirmed',             cls: 'status-verified' },
+    cancelled:  { label: '❌ Cancelled',             cls: 'status-rejected' },
+  };
+  const ps = statusLabel[payStatus] || statusLabel['no-payment'];
+  const rs = statusLabel[regStatus] || statusLabel['pending'];
+
+  return `
+    <div class="dash-card">
+      <div class="dash-card-tape" style="background:linear-gradient(90deg,${w?.color||'#c8dbc0'},transparent 80%)"></div>
+      <div class="dash-card-top">
+        <div class="dash-char-preview" id="dash-char-${reg.id}"></div>
+        <div class="dash-card-info">
+          <div class="dash-workshop-emoji">${w?.emoji || '✿'}</div>
+          <h3 class="dash-workshop-name">${escHtml(w?.title || 'Workshop')}</h3>
+          <p class="dash-workshop-date">📅 ${w ? formatDate(w.date) : '—'}</p>
+          <p class="dash-workshop-loc">📍 ${escHtml(w?.location || '—')}</p>
+          <div class="dash-char-name">${escHtml(reg.character_name || 'My Character')}</div>
+        </div>
+      </div>
+      <div class="dash-status-row">
+        <span class="dash-status ${rs.cls}">${rs.label}</span>
+        <span class="dash-status ${ps.cls}">${ps.label}</span>
+      </div>
+      ${isCompleted ? `
+      <div class="dash-completion-badge">
+        <span>🏆</span> Workshop Completed!
+      </div>
+      ` : ''}
+      ${w?.date ? `<div class="dash-countdown" id="countdown-${reg.id}">
+        <span class="countdown-label">Workshop in</span>
+        <span class="countdown-val">...</span>
+      </div>` : ''}
+      <div class="dash-reg-num">Reg. No: <strong>${escHtml(reg.registration_number)}</strong> · Seat #${String(reg.seat_number||0).padStart(2,'0')}</div>
+      ${ticket ? `<div class="dash-ticket-num">Ticket: <strong>${escHtml(ticket.ticket_number)}</strong></div>` : ''}
+      ${bring.length ? `<div class="dash-checklist">
+        <div class="dash-checklist-title">🎒 Things to bring</div>
+        <ul class="dash-checklist-list">${bring.map(b=>`<li><label><input type="checkbox" /> <span>${escHtml(b)}</span></label></li>`).join('')}</ul>
+      </div>` : ''}
+      <div class="dash-qr-row">
+        <div class="dash-qr-wrap">
+          <img id="dash-qr-${reg.id}" class="dash-qr" src="" alt="QR Code" />
+          <p class="dash-qr-hint">Show at check-in</p>
+        </div>
+        <div class="dash-card-actions">
+          <button class="btn btn-primary" data-view-ticket="${reg.id}">View Ticket</button>
+          ${(payStatus === 'no-payment' || payStatus === 'rejected') ? `<button class="btn btn-soft" data-complete-payment="${reg.id}">Complete Payment</button>` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function updateCountdown(el, target) {
+  const diff = target - new Date();
+  const valEl = el.querySelector('.countdown-val');
+  if (!valEl) return;
+  if (diff <= 0) { valEl.textContent = 'Today! 🎉'; return; }
+  const days  = Math.floor(diff / 86400000);
+  const hours = Math.floor((diff % 86400000) / 3600000);
+  valEl.textContent = days > 0 ? `${days} days ${hours}h` : `${hours} hours`;
+}
+
+/* ─────────────────────────────────────────────────────────
+   16. ADD AUTH PAGE CONTAINER
+   ───────────────────────────────────────────────────────── */
+const authPageEl = document.createElement('div');
+authPageEl.id = 'page-auth';
+authPageEl.className = 'page';
+document.body.appendChild(authPageEl);
+
+// Add dashboard and auth styles
+const dashStyles = document.createElement('style');
+dashStyles.textContent = `
+  .dash-badges-section, .dash-certificates-section { margin-bottom: 32px; }
+  .dash-section-title { font-family: 'Fraunces', serif; font-size: 1.3rem; color: var(--ink); margin-bottom: 16px; }
+  .dash-badges-grid, .dash-certificates-grid { display: flex; flex-wrap: wrap; gap: 12px; }
+  .dash-badge-card, .dash-certificate-card {
+    background: linear-gradient(135deg, var(--honey), var(--peach));
+    border-radius: var(--r-sm);
+    padding: 16px 20px;
+    text-align: center;
+    min-width: 140px;
+  }
+  .dash-badge-icon, .dash-cert-icon { font-size: 2rem; margin-bottom: 8px; }
+  .dash-badge-name, .dash-cert-number { font-weight: 700; color: var(--ink); font-size: .9rem; }
+  .dash-badge-date, .dash-cert-date { font-size: .75rem; color: var(--ink-soft); margin-top: 4px; }
+  .dash-completion-badge {
+    background: linear-gradient(135deg, var(--sage-l), var(--mint));
+    border-radius: var(--r-full);
+    padding: 8px 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    color: var(--sage-dk);
+    margin-bottom: 12px;
+  }
+  .dash-ticket-num { font-size: .8rem; color: var(--sage-d); margin-bottom: 8px; }
+  .conf-payment-reminder {
+    text-align: center;
+    padding: 20px;
+    background: rgba(240,192,96,.12);
+    border: 1px solid rgba(240,192,96,.35);
+    border-radius: var(--r-sm);
+    margin-bottom: 24px;
+  }
+  .conf-payment-reminder p { margin-bottom: 12px; color: var(--ink-soft); }
+`;
+document.head.appendChild(dashStyles);
+
+/* ─────────────────────────────────────────────────────────
+   17. INITIALIZE
+   ───────────────────────────────────────────────────────── */
+checkAuth().then(() => {
+  updateNavForAuth();
+  renderTabs();
+  renderOptions();
+  applyState();
+});
