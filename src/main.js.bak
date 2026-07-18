@@ -1357,7 +1357,7 @@ function renderPaymentPage() {
           </div>
           <p class="form-error-msg" id="pay-submit-error" style="display:none"></p>
           <button class="btn btn-primary btn-lg" id="btn-pay-submit">Submit Payment ✦</button>
-          <p class="pay-submit-note">Your spot is reserved for 10 minutes. Complete your payment before the timer ends, or your registration will be automatically cancelled.</p>
+          <p class="pay-submit-note">Payment required within 10 minutes.</p>
         </div>
         <div class="pay-char-side">
           <p class="companion-label">Your companion is waiting!</p>
