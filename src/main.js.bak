@@ -193,17 +193,10 @@ const CATEGORIES = [
 ]},
 { id: 'accessory', label: 'Accessories', folder: 'accessories', options: [
 { file: 'acc1.png', name: 'Acc 1' },
-{ file: 'acc2.png', name: 'Acc 2' },
-{ file: 'acc3.png', name: 'Acc 3' },
-{ file: 'acc4.png', name: 'Acc 4' },
-{ file: 'acc5.png', name: 'None' }
+{ file: 'acc2.png', name: 'None' }
 ]},
 { id: 'hobby', label: 'Hobby', folder: 'hobbies', options: [
-{ file: 'hobby1.png', name: 'Hobby 1' },
-{ file: 'hobby2.png', name: 'Hobby 2' },
-{ file: 'hobby3.png', name: 'Hobby 3' },
-{ file: 'hobby4.png', name: 'Hobby 4' },
-{ file: 'hobby5.png', name: 'None' }
+{ file: 'hobby1.png', name: 'Hobby 1' }
 ]},
 { id: 'background', label: 'Background', folder: 'background', options: [
 { file: 'bg1.png', name: 'Plain White' },
@@ -427,6 +420,8 @@ function updateLayer(layerId, filename) {
 }
 
 function applyState() {
+  console.log("applyState dipanggil", new Date().toLocaleTimeString());
+
   CATEGORIES.forEach(cat => updateLayer(cat.id, state[cat.id]));
 }
 
@@ -1900,9 +1895,12 @@ document.head.appendChild(dashStyles);
 /* ─────────────────────────────────────────────────────────
    17. INITIALIZE
    ───────────────────────────────────────────────────────── */
+// Render UI langsung
+renderTabs();
+renderOptions();
+applyState();
+
+// Cek login di background
 checkAuth().then(() => {
   updateNavForAuth();
-  renderTabs();
-  renderOptions();
-  applyState();
 });

@@ -499,6 +499,8 @@ function updateLayer(layerId, filename) {
 }
 
 function applyState() {
+  console.log("applyState dipanggil", new Date().toLocaleTimeString());
+
   CATEGORIES.forEach(cat => updateLayer(cat.id, state[cat.id]));
 }
 
