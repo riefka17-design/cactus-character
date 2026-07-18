@@ -627,7 +627,7 @@ function renderAuthPage() {
         <div class="auth-card">
           <div class="auth-header">
             <h2 class="auth-title">Welcome to CACTUS ✿</h2>
-            <p class="auth-subtitle">Sign in to join workshops and track your adventures!</p>
+            <p class="auth-subtitle">Hi Cactusias! Sign in to track your adventures!</p>
           </div>
 
           <div class="auth-tabs">
@@ -1819,7 +1819,7 @@ async function renderDashboard() {
           <div id="dash-empty-char"></div>
           <h3>No workshops yet!</h3>
           <p>Your character is ready - find an adventure to join.</p>
-          <a href="#" class="btn btn-primary btn-lg" data-nav="workshops">Browse Workshops ✦</a>
+          <a href="#" class="btn btn-primary btn-lg" data-nav="workshops">Explore Workshops ✦</a>
         </div>
       `;
       document.getElementById('dash-empty-char')?.appendChild(makeCharPreview(state, 'md'));
