@@ -1470,6 +1470,18 @@ async function renderConfirmation(regId) {
     .eq('id', regId)
     .maybeSingle();
 
+  if (
+    reg && 
+    reg.status === 'pending' &&
+    reg.expires_at &&
+    new Date() > new Date(reg.expires_at)
+  ) {await supabase
+    .from('registrations')
+    .update({ status: 'expired'})
+    .eq('id', reg.id);
+  reg.status = 'expired';
+  }
+  
   if (error || !reg) {
     logSupabaseError('renderConfirmation', error);
     content.innerHTML = `<p class="error-msg">Could not load your confirmation. Try checking My Workshop.${error ? `<br><small>${escHtml(friendlyError(error, ''))}</small>` : ''}</p>`;
