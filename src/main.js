@@ -1818,7 +1818,7 @@ async function renderDashboard() {
         <div class="dashboard-empty">
           <div id="dash-empty-char"></div>
           <h3>No workshops yet!</h3>
-          <p>Your character is ready - find an adventure to join.</p>
+          <p>Your character is ready, find an adventure to join!</p>
           <a href="#" class="btn btn-primary btn-lg" data-nav="workshops">Explore Workshops ✦</a>
         </div>
       `;
