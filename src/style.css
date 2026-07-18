@@ -1832,7 +1832,7 @@ body::after {
 .pay-amount-label { font-size: .85rem; color: var(--ink-soft); font-weight: 600; }
 .pay-amount-val   { font-family: 'Fraunces', serif; font-size: 1.3rem; color: var(--ink); font-weight: 700; }
 
-.pay-submit-btn { width: 100%; justify-content: center; margin-bottom: 5 px; }
+.pay-submit-btn { width: 100%; justify-content: center; margin-bottom: 4px; }
 .pay-submit-note { font-size: .78rem; color: var(--ink-light); text-align: center; }
 
 .pay-upload-col { display: flex; flex-direction: column; gap: 18px; }
