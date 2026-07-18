@@ -1301,6 +1301,7 @@ async function submitRegistration() {
   const randNum = String(Math.floor(Math.random() * 9000) + 1000);
   const regNum  = `CAC-${year}-${randNum}`;
 
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
   const payload = {
     registration_number: regNum,
     workshop_id:         regState.workshopId,
@@ -1319,6 +1320,7 @@ async function submitRegistration() {
     character_state:     state,
     status:              'pending',
     seat_number:         seatNum,
+    expires_at:          expiresAt,
   };
 
   let insertResult;
@@ -1573,6 +1575,18 @@ async function renderConfirmation(regId) {
     .eq('id', regId)
     .maybeSingle();
 
+  if (
+    reg && 
+    reg.status === 'pending' &&
+    reg.expires_at &&
+    new Date() > new Date(reg.expires_at)
+  ) {await supabase
+    .from('registrations')
+    .update({ status: 'expired'})
+    .eq('id', reg.id);
+  reg.status = 'expired';
+  }
+  
   if (error || !reg) {
     logSupabaseError('renderConfirmation', error);
     content.innerHTML = `<p class="error-msg">Could not load your confirmation.${error ? `<br><small>${escHtml(friendlyError(error, ''))}</small>` : ''}</p>`;
