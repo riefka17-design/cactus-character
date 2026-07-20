@@ -1418,9 +1418,9 @@ function renderPaymentPage() {
           </div>
           <div id="pay-method-ewallet" class="pay-method-detail" style="display:none">
             <div class="pay-ewallet-list">
-              <div class="pay-ewallet-item"><span class="ewallet-icon">💚</span><div><div class="ewallet-name">GoPay</div><div class="ewallet-num">0852-1914-417 (Riefka Berliana)</div></div></div>
-              <div class="pay-ewallet-item"><span class="ewallet-icon">🔵</span><div><div class="ewallet-name">OVO</div><div class="ewallet-num">0852-1914-4179 (Riefka Berliana)</div></div></div>
-              <div class="pay-ewallet-item"><span class="ewallet-icon">🟠</span><div><div class="ewallet-name">Dana</div><div class="ewallet-num">0852-1914-4179 (Riefka Berliana)</div></div></div>
+              <div class="pay-ewallet-item"><span class="ewallet-icon">💚</span><div><div class="ewallet-name">GoPay</div><div class="ewallet-num">+62 898 5570 109 a.n Nabhani Najla Salsabila </div></div></div>
+              <div class="pay-ewallet-item"><span class="ewallet-icon">🔵</span><div><div class="ewallet-name">OVO</div><div class="ewallet-num">+62 852 1914 4179 a.n Riefka Berliana</div></div></div>
+              <div class="pay-ewallet-item"><span class="ewallet-icon">🟠</span><div><div class="ewallet-name">Dana</div><div class="ewallet-num">+62 852 1914 4179 a.n Riefka Berliana</div></div></div>
             </div>
             <p class="pay-ewallet-note">Transfer exactly <strong>${formatPrice(price)}</strong> and include your name in the notes.</p>
           </div>
