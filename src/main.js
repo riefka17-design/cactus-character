@@ -9,6 +9,7 @@ import { createClient } from '@supabase/supabase-js';
 import QRCode from 'qrcode';
 
 /* ── Supabase client ─────────────────────────────────────── */
+// SESUDAH
 const SUPABASE_URL      = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
@@ -19,7 +20,17 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   );
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  global: {
+    fetch: (url, options = {}) => {
+      return fetch(url, {
+        ...options,
+        cache: 'no-store',
+        headers: { ...options.headers, 'Cache-Control': 'no-cache' },
+      });
+    },
+  },
+});
 
 /* Small helper so every Supabase error is visible in the console */
 function logSupabaseError(context, error) {
