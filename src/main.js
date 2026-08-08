@@ -23,17 +23,10 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   );
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  global: {
-    fetch: (url, options = {}) => {
-      return fetch(url, {
-        ...options,
-        cache: 'no-store',
-        headers: { ...options.headers, 'Cache-Control': 'no-cache' },
-      });
-    },
-  },
-});
+const supabase = createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
 
 /* Small helper so every Supabase error is visible in the console */
 function logSupabaseError(context, error) {
