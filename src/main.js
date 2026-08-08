@@ -13,6 +13,9 @@ import QRCode from 'qrcode';
 const SUPABASE_URL      = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+console.log("SUPABASE_URL =", SUPABASE_URL);
+console.log("SUPABASE_ANON_KEY =", SUPABASE_ANON_KEY);
+
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   console.error(
     '[CACTUS] Missing Supabase env vars. VITE_SUPABASE_URL:',
