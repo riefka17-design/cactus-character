@@ -1687,15 +1687,7 @@ async function renderConfirmation(regId) {
   // QR Code - Only generate real QR if payment verified, otherwise show locked placeholder
   let qrDataUrl = '';
   if (isTicketUnlocked) {
-    const qrPayload = JSON.stringify({
-      id:    reg.id,
-      num:   reg.registration_number,
-      name:  reg.full_name,
-      ws:    w?.id || '',
-      char:  reg.character_name || '',
-      seat:  reg.seat_number,
-      ticket: ticket?.ticket_number || null,
-    });
+    const qrPayload = `${window.location.origin}/ticket/${encodeURIComponent(ticket.ticket_number)}`;
     try {
       qrDataUrl = await QRCode.toDataURL(qrPayload, {
         width: 160, margin: 1,
@@ -1990,14 +1982,18 @@ async function renderDashboard() {
 
     if (isVerified && ticket) {
       try {
+        const qrPayload = `${window.location.origin}/ticket/${encodeURIComponent(ticket.ticket_number)}`;
+
         const url = await QRCode.toDataURL(
-          JSON.stringify({
-            id: reg.id,
-            num: reg.registration_number,
-            name: reg.full_name,
-            ticket: ticket?.ticket_number || null
-          }),
-          { width: 120, margin: 1, color: { dark: '#5a3e2b', light: '#fdf8ef' } }
+          qrPayload,
+          {
+            width: 120,
+            margin: 1,
+            color: {
+              dark: '#5a3e2b',
+              light: '#fdf8ef'
+            }
+          }
         );
         qrEl.src = url;
         qrEl.classList.remove('qr-locked');
