@@ -1178,6 +1178,15 @@ function renderRegStep(step) {
               <label class="form-label">Emergency Contact <span class="form-opt">(optional)</span></label>
               <input class="form-input" name="emergency_contact" type="text" placeholder="Name &amp; phone (e.g. Mama - 0812...)" value="${escHtml(fd.emergency_contact)}" />
             </div>
+            <div class="form-group">
+              <label class="form-label">Pilihan Minuman *</label>
+              <select class="form-input" name="drink_preference" required>
+              <option value="">Pilih minuman</option>
+              <option value="Lychee Tea">Lychee Tea</option>
+              <option value="Red Velvet">Red Velvet</option>
+              <option value="Kopi Susu">Kopi Susu</option>
+              </select>
+            </div>
           </div>
           <div class="form-actions">
             <button type="submit" class="btn btn-primary btn-lg">Next: Your Character →</button>
