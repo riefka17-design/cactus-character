@@ -338,16 +338,16 @@ const CATEGORIES = [
 { file: 'dress8.png', name: 'White Ribbon Dress' }
 ]},
 { id: 'accessory', label: 'Accessories', folder: 'accessories', options: [
-{ file: 'acc1.png', name: 'None' },
-{ file: 'acc2.png', name: 'Berry Clip' },
-{ file: 'acc3.png', name: 'Clover Clip' },
-{ file: 'acc4.png', name: 'Heart Clip' },
-{ file: 'acc5.png', name: 'Star Clip' },
-{ file: 'acc6.png', name: 'Daisy Clip' },
-{ file: 'acc7.png', name: 'Pearl Clip' },
-{ file: 'acc8.png', name: 'Ribbon Clip' },
-{ file: 'acc9.png', name: 'Sunny Clip' },
-{ file: 'acc10.png', name: 'Butterfly Clip' }
+{ file: 'accessory1.png', name: 'None' },
+{ file: 'accessory2.png', name: 'Berry Clip' },
+{ file: 'accessory3.png', name: 'Clover Clip' },
+{ file: 'accessory4.png', name: 'Heart Clip' },
+{ file: 'accessory5.png', name: 'Star Clip' },
+{ file: 'accessory6.png', name: 'Daisy Clip' },
+{ file: 'accessory7.png', name: 'Pearl Clip' },
+{ file: 'accessory8.png', name: 'Ribbon Clip' },
+{ file: 'accessory9.png', name: 'Sunny Clip' },
+{ file: 'accessory10.png', name: 'Butterfly Clip' }
 ]},
 { id: 'hobby', label: 'Hobby', folder: 'hobbies', options: [
 { file: 'hobby1.png', name: 'None' },
