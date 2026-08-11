@@ -268,16 +268,15 @@ const CATEGORIES = [
 ]},
 { id: 'eyeglass', label: 'Eyeglass', folder: 'eyeglass', options: [
 { file: 'eyeglass1.png', name: 'None' },
-{ file: 'eyeglass2.png', name: 'Golden Frame' },
-{ file: 'eyeglass3.png', name: 'Honey Round' },
-{ file: 'eyeglass4.png', name: 'Cloud Frame' },
-{ file: 'eyeglass5.png', name: 'Garden Frame' },
-{ file: 'eyeglass6.png', name: 'Soft Oval' },
-{ file: 'eyeglass7.png', name: 'Cocoa Frame' },
-{ file: 'eyeglass8.png', name: 'Classic Round' },
-{ file: 'eyeglass9.png', name: 'Sunny Round' },
-{ file: 'eyeglass10.png', name: 'Blush Round' },
-{ file: 'eyeglass11.png', name: 'Sweetheart Frames' }
+{ file: 'eyeglass2.png', name: 'Honey Round' },
+{ file: 'eyeglass3.png', name: 'Cloud Frame' },
+{ file: 'eyeglass4.png', name: 'Garden Frame' },
+{ file: 'eyeglass5.png', name: 'Soft Oval' },
+{ file: 'eyeglass6.png', name: 'Cocoa Frame' },
+{ file: 'eyeglass7.png', name: 'Classic Round' },
+{ file: 'eyeglass8.png', name: 'Sunny Round' },
+{ file: 'eyeglass9.png', name: 'Blush Round' },
+{ file: 'eyeglass10.png', name: 'Sweetheart Frames' }
 ]},
 { id: 'top', label: 'Top', folder: 'tops', options: [
 { file: 'top1.png', name: 'None' },
