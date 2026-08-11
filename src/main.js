@@ -266,8 +266,18 @@ const CATEGORIES = [
 { file: 'shoes5.png', name: 'Cream Sendal' },
 { file: 'shoes6.png', name: 'Blush Sendal' }
 ]},
-{ id: 'hijab', label: 'Hijab', folder: 'hijab', options: [
-{ file: 'hijab1.png', name: 'None' }
+{ id: 'eyeglass', label: 'Eyeglass', folder: 'eyeglass', options: [
+{ file: 'eyeglass1.png', name: 'None' },
+{ file: 'eyeglass2.png', name: 'Golden Frame' },
+{ file: 'eyeglass3.png', name: 'Honey Round' },
+{ file: 'eyeglass4.png', name: 'Cloud Frame' },
+{ file: 'eyeglass5.png', name: 'Garden Frame' },
+{ file: 'eyeglass6.png', name: 'Soft Oval' },
+{ file: 'eyeglass7.png', name: 'Cocoa Frame' },
+{ file: 'eyeglass8.png', name: 'Classic Round' },
+{ file: 'eyeglass9.png', name: 'Sunny Round' },
+{ file: 'eyeglass10.png', name: 'Blush Round' },
+{ file: 'eyeglass11.png', name: 'Sweetheart Frames' }
 ]},
 { id: 'top', label: 'Top', folder: 'tops', options: [
 { file: 'top1.png', name: 'None' },
@@ -330,17 +340,32 @@ const CATEGORIES = [
 ]},
 { id: 'accessory', label: 'Accessories', folder: 'accessories', options: [
 { file: 'acc1.png', name: 'None' },
-{ file: 'acc2.png', name: 'Acc 2' },
-{ file: 'acc3.png', name: 'Acc 3' },
-{ file: 'acc4.png', name: 'Acc 4' },
-{ file: 'acc5.png', name: 'Acc 5' }
+{ file: 'acc2.png', name: 'Berry Clip' },
+{ file: 'acc3.png', name: 'Clover Clip' },
+{ file: 'acc4.png', name: 'Heart Clip' },
+{ file: 'acc5.png', name: 'Star Clip' },
+{ file: 'acc6.png', name: 'Daisy Clip' },
+{ file: 'acc7.png', name: 'Pearl Clip' },
+{ file: 'acc8.png', name: 'Ribbon Clip' },
+{ file: 'acc9.png', name: 'Sunny Clip' },
+{ file: 'acc10.png', name: 'Butterfly Clip' }
 ]},
 { id: 'hobby', label: 'Hobby', folder: 'hobbies', options: [
 { file: 'hobby1.png', name: 'None' },
-{ file: 'hobby2.png', name: 'Hobby 2' },
-{ file: 'hobby3.png', name: 'Hobby 3' },
-{ file: 'hobby4.png', name: 'Hobby 4' },
-{ file: 'hobby5.png', name: 'Hobby 5' }
+{ file: 'hobby2.png', name: 'Picnic Lover' },
+{ file: 'hobby3.png', name: 'Potion Maker' },
+{ file: 'hobby4.png', name: 'Justice Seeker' },
+{ file: 'hobby5.png', name: 'Dessert Lover' },
+{ file: 'hobby6.png', name: 'Little Healer' },
+{ file: 'hobby7.png', name: 'Snapshot' },
+{ file: 'hobby8.png', name: 'Creative Artist' },
+{ file: 'hobby9.png', name: 'Pet Lover' },
+{ file: 'hobby10.png', name: 'Public Speaker' },
+{ file: 'hobby11.png', name: 'Future Architect' },
+{ file: 'hobby12.png', name: 'Techie' },
+{ file: 'hobby13.png', name: 'Little Chef' },
+{ file: 'hobby14.png', name: 'Bunny Lover' },
+{ file: 'hobby15.png', name: 'Fisher' }
 ]},
 { id: 'background', label: 'Background', folder: 'background', options: [
 { file: 'bg1.png', name: 'None' },

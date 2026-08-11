@@ -172,8 +172,8 @@ const CATEGORIES = [
 { file: 'blush4.png', name: 'Side Stripe Blush' },
 { file: 'blush5.png', name: 'None' }
 ]},
-{ id: 'hijab', label: 'Hijab', folder: 'hijab', options: [
-{ file: 'hijab1.png', name: 'None' }
+{ id: 'eyeglass', label: 'Eyeglass', folder: 'eyeglass', options: [
+{ file: 'eyeglass1.png', name: 'None' }
 ]},
 { id: 'top', label: 'Top', folder: 'tops', options: [
 { file: 'top1.png', name: 'Top 1' },
