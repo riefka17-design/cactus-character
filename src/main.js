@@ -276,7 +276,7 @@ const CATEGORIES = [
 { file: 'eyeglass7.png', name: 'Classic Round' },
 { file: 'eyeglass8.png', name: 'Sunny Round' },
 { file: 'eyeglass9.png', name: 'Blush Round' },
-{ file: 'eyeglass10.png', name: 'Sweetheart Frames' }
+{ file: 'eyeglass1.png', name: 'Sweetheart Frames' }
 ]},
 { id: 'top', label: 'Top', folder: 'tops', options: [
 { file: 'top1.png', name: 'None' },
